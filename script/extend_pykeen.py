@@ -18,6 +18,7 @@ C0_DIM = 32
 C1_DIM = 32
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
+EVALUATION_BATCH_SIZE = 1024
 DATASET_PCT = 106
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
@@ -148,7 +149,7 @@ def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, mo
 def run(model, dataset, num_epochs, random_seed, 
         embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
-        diffusion_iterations=DIFFUSION_ITERATIONS):
+        diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE):
 
     orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
     eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
@@ -188,6 +189,7 @@ def run(model, dataset, num_epochs, random_seed,
 
         print('evaluating eval model...')
         eval_result  = evaluator.evaluate(
+            batch_size=evaluation_batch_size,
             model=eval_model,
             mapped_triples=eval_triples.mapped_triples,
             additional_filter_triples=[orig_triples.mapped_triples,
@@ -207,6 +209,7 @@ def run(model, dataset, num_epochs, random_seed,
 
         iteration = 0
         orig_result = evaluator.evaluate(
+                batch_size=evaluation_batch_size,
                 model=orig_model,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
@@ -229,6 +232,7 @@ def run(model, dataset, num_epochs, random_seed,
             print('evaluating extended model...')
             # evaluate original model
             orig_result = evaluator.evaluate(
+                batch_size=evaluation_batch_size,
                 model=orig_model,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
@@ -274,9 +278,11 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
                         help='inductive graph to train on')
+    training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
+                        help='evaluation batch size')
 
     args = parser.parse_args()
 
     run(args.model, args.dataset, args.num_epochs, args.random_seed,
         args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph)
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size)
