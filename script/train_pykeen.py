@@ -63,7 +63,7 @@ def run(model, dataset, num_epochs, random_seed,
         
         negative_sampler=negative_sampler, 
         negative_sampler_kwargs=negative_sampler_kwargs,
-        evaluation_kwargs={'batch_size': 1024}
+        evaluation_kwargs={'batch_size': 512}
         
     )
 

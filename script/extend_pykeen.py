@@ -12,13 +12,13 @@ from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
+MODEL = 'transr'
 NUM_EPOCHS = 50
 C0_DIM = 32
 C1_DIM = 32
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
-EVALUATION_BATCH_SIZE = 1024
+EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 106
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
@@ -61,14 +61,15 @@ def get_model_entities(model, entities):
 def get_model_restriction_maps(model, triples):
     nu = torch.LongTensor([0]) # null value, we just want all restriction maps
     _, r, _ = model._get_representations(h=nu, r=triples[:,1], t=nu, mode=None)
+    if model._get_name() == 'TransR':
+        # Pykeen TransR model uses 1 restriction map and contains embeddings in the first relation slot
+        translation = r[0]
+        restriction_maps = torch.transpose(r[1],1,2).unsqueeze(1)
+        restriction_maps = restriction_maps.repeat(1,2,1,1)
+        return restriction_maps, translation
     if len(model.relation_representations) == 2:
         # something like structured embedding
         return torch.cat([tr.unsqueeze(1) for tr in r], dim=1)
-    elif len(model.relation_representations) == 3:
-        # something like transR
-        translation = r[0]
-        restriction_maps = torch.cat([tr.unsqueeze(1) for tr in r[1:]], dim=1)
-        return restriction_maps, translation
     elif len(model.relation_representations) == 1:
         translation = r
         # create identity restriction maps of size (num_triples, 2, embedding_dim, embedding_dim)
@@ -78,7 +79,7 @@ def get_model_restriction_maps(model, triples):
         return restriction_maps, translation
     return restriction_maps
 
-def expand_model_se(model, entity_inclusion, extended_graph):
+def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
     triples = extended_graph.mapped_triples
     edge_index = triples[:,[0,2]].T
     all_ents = edge_index.flatten().unique()
@@ -99,9 +100,6 @@ def expand_model_se(model, entity_inclusion, extended_graph):
     print('reinitializing unknown entities according to model embedding')
     model = expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new)
     return model, interior_ent_msk
-
-def expand_model_transe(model, entity_inclusion, extended_graph):
-    return expand_model_se(model, entity_inclusion, extended_graph)
 
 def diffuse_interior_se(model, triples, interior_ent_msk,
                     k=1, h=1, max_iterations=1, max_nodes=100, convergence_tol=1e-2, normalized=True):
@@ -220,10 +218,13 @@ def diffuse_interior_translational(model, triples, interior_ent_msk,
 def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, model_type):
     assert list(relation_inclusion.keys()) == list(relation_inclusion.values())
     if model_type == 'se':
-        expanded_model, interior_mask = expand_model_transe(model, entity_inclusion, extended_graph)
+        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_se
     if model_type == 'transe':
-        expanded_model, interior_mask = expand_model_transe(model, entity_inclusion, extended_graph)
+        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
+        return expanded_model, interior_mask, diffuse_interior_translational
+    if model_type == 'transr':
+        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_translational
 
 def run(model, dataset, num_epochs, random_seed, 
