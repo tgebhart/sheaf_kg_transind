@@ -276,8 +276,6 @@ def run(model, dataset, num_epochs, random_seed,
             mapped_triples=eval_triples.mapped_triples,
             additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
-            # mapped_triples=eval_graph.mapped_triples,
-            # additional_filter_triples=[orig_triples.mapped_triples]
         )
         eval_mr = eval_result.to_df()
         eval_mr.rename({'Value':'Value_eval'}, axis=1, inplace=True)
@@ -296,8 +294,6 @@ def run(model, dataset, num_epochs, random_seed,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
-                # mapped_triples=eval_graph.mapped_triples,
-                # additional_filter_triples=[orig_triples.mapped_triples]
         )
         orig_mr = orig_result.to_df()
         prev_it_mr = orig_mr.copy()
@@ -311,7 +307,7 @@ def run(model, dataset, num_epochs, random_seed,
             torch.cuda.empty_cache()
             print('diffusing model...')
             orig_model = diffusion_fun(orig_model, eval_graph.mapped_triples, interior_mask, 
-                                            max_nodes=100, normalized=True, h=1e-1, k=1)
+                                            max_nodes=150, normalized=True, h=1e-1, k=1)
 
             print('evaluating extended model...')
             # evaluate original model
@@ -321,8 +317,6 @@ def run(model, dataset, num_epochs, random_seed,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
-                # mapped_triples=eval_graph.mapped_triples,
-                # additional_filter_triples=[orig_triples.mapped_triples]
             )
             it_mr = orig_result.to_df()
             diff_mr = (it_mr.merge(prev_it_mr, on=['Side','Type','Metric'], suffixes=('_diffused', '_iteration'))

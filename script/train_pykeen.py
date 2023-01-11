@@ -40,6 +40,8 @@ def run(model, dataset, num_epochs, random_seed,
     training_set, testing_set = get_train_eval_sets(graph)
     
     model_kwargs = {'embedding_dim': embedding_dim, 'scoring_fct_norm': 2}
+    if model == 'transr':
+        model_kwargs['relation_dim'] = c1_dimension
     training_kwargs = {'batch_size': 512, 'num_epochs':num_epochs}
     negative_sampler = 'basic'
     negative_sampler_kwargs = {'num_negs_per_pos': 66}
