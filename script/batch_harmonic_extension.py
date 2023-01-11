@@ -18,7 +18,7 @@ def coboundary(edge_index,restriction_maps):
         d[:,e*de:(e+1)*de,t*dv:(t+1)*dv] = -restriction_maps[:,e,1,:,:]
     return d
 
-def Laplacian(edge_index,restriction_maps,normalize=False):
+def Laplacian(edge_index,restriction_maps):
     d = coboundary(edge_index,restriction_maps)
     L = torch.matmul(torch.transpose(d,1,2), d)
     return L
@@ -75,6 +75,27 @@ def step_matrix(edge_index, restriction_maps, boundary_vertices, interior_vertic
     L[np.ix_(batch_idx, Bidx, Uidx)] = 0
 
     return L
+
+def step_matrix_translational(edge_index, restriction_maps, boundary_vertices, interior_vertices, b, h=1, normalized=True):
+    d = coboundary(edge_index,restriction_maps)
+    L = torch.matmul(torch.transpose(d,1,2), d)
+    dv = restriction_maps.shape[-1]
+    nbatch = L.shape[0]
+    batch_idx = np.arange(nbatch)
+
+    if normalized:
+        D = torch.zeros_like(L)
+        for v in range(edge_index.max()+1):
+            Didx = torch.arange(v*dv,(v+1)*dv)
+            DDidx = np.ix_(batch_idx, Didx, Didx)
+            D[DDidx] = L[DDidx]
+        D_invsqrt = batched_sym_matrix_pow(D, -0.5)
+        L = D_invsqrt @ L @ D_invsqrt
+        d = d@batched_sym_matrix_pow(D, -1)
+
+    L = h*L
+    cbd_val = h*(b.reshape(nbatch, 1, -1) @ d).squeeze(1)
+    return L, cbd_val
     
 def harmonic_extension(edge_index,restriction_maps,boundary_vertices,interior_vertices,xB):
     L = Laplacian(edge_index,restriction_maps)

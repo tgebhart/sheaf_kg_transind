@@ -7,13 +7,13 @@ from torch_geometric.utils import k_hop_subgraph
 from pykeen.evaluation import RankBasedEvaluator
 from pykeen.nn import Embedding
 
-from batch_harmonic_extension import step_matrix
+from batch_harmonic_extension import step_matrix, step_matrix_translational
 from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'se'
-NUM_EPOCHS = 5
+MODEL = 'transe'
+NUM_EPOCHS = 50
 C0_DIM = 32
 C1_DIM = 32
 RANDOM_SEED = 134
@@ -61,7 +61,21 @@ def get_model_entities(model, entities):
 def get_model_restriction_maps(model, triples):
     nu = torch.LongTensor([0]) # null value, we just want all restriction maps
     _, r, _ = model._get_representations(h=nu, r=triples[:,1], t=nu, mode=None)
-    restriction_maps = torch.cat([tr.unsqueeze(1) for tr in r], dim=1)
+    if len(model.relation_representations) == 2:
+        # something like structured embedding
+        return torch.cat([tr.unsqueeze(1) for tr in r], dim=1)
+    elif len(model.relation_representations) == 3:
+        # something like transR
+        translation = r[0]
+        restriction_maps = torch.cat([tr.unsqueeze(1) for tr in r[1:]], dim=1)
+        return restriction_maps, translation
+    elif len(model.relation_representations) == 1:
+        translation = r
+        # create identity restriction maps of size (num_triples, 2, embedding_dim, embedding_dim)
+        I = torch.eye(r.shape[1]).unsqueeze(0)
+        I = I.repeat(2, 1, 1).unsqueeze(0)
+        restriction_maps = I.repeat(triples.shape[0], 1, 1, 1).to(model.device)
+        return restriction_maps, translation
     return restriction_maps
 
 def expand_model_se(model, entity_inclusion, extended_graph):
@@ -82,8 +96,12 @@ def expand_model_se(model, entity_inclusion, extended_graph):
 
     # expand pykeen model to accomodate new entities introduced by inductive graph
     num_embeddings_new = all_ents.shape[0]
+    print('reinitializing unknown entities according to model embedding')
     model = expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new)
     return model, interior_ent_msk
+
+def expand_model_transe(model, entity_inclusion, extended_graph):
+    return expand_model_se(model, entity_inclusion, extended_graph)
 
 def diffuse_interior_se(model, triples, interior_ent_msk,
                     k=1, h=1, max_iterations=1, max_nodes=100, convergence_tol=1e-2, normalized=True):
@@ -140,11 +158,73 @@ def diffuse_interior_se(model, triples, interior_ent_msk,
         # converged = check_convergence(int_orig, xt[interior_ent_msk], tol=convergence_tol)
 
     return model
+
+def diffuse_interior_translational(model, triples, interior_ent_msk,
+                    k=1, h=1, max_iterations=1, max_nodes=100, convergence_tol=1e-2, normalized=True):
+
+    edge_index = triples[:,[0,2]].T
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+    boundary_ent_msk = ~interior_ent_msk
+
+    converged = False
+    iterations = 0
+
+    while not converged and iterations < max_iterations:
+        # int_orig = xt[interior_ent_msk]
+        for ivix in tqdm(torch.randperm(interior_vertices.size(0)), desc='iterating over interior vertex subgraphs'):
+            center_vertex = interior_vertices[ivix]
+            sg_nodes, sg_edge_index, sg_node_map, sg_msk = k_hop_subgraph(center_vertex.item(), k, edge_index, 
+                                                                relabel_nodes=False, num_nodes=num_nodes)
+
+            # if the subgraph is larger than desired, randomly sample nodes and remap masks
+            if sg_nodes.size(0) > max_nodes:
+                nz_indices = sg_msk.nonzero()
+                rand_indices = torch.randperm(nz_indices.shape[0])
+                drop_indices = rand_indices[max_nodes:]
+                sg_msk[nz_indices[drop_indices]] = False
+                
+                sg_edge_index = edge_index[:,sg_msk]
+                sg_nodes = sg_edge_index.flatten().unique()
+
+            # get entity representations
+            xt = get_model_entities(model, sg_nodes)
+            restriction_maps, b = get_model_restriction_maps(model, triples[sg_msk])
+                
+            # determine which of the subgraph nodes are boundary vertices and which are interior
+            this_boundary_vertices = sg_nodes[boundary_ent_msk[sg_nodes]]
+            this_interior_vertices = sg_nodes[interior_ent_msk[sg_nodes]]
+
+            # create map for translating boundary and interior vertices into their [0,sg_nodes.size(0)] reindexed representations
+            row = sg_edge_index[1]
+            node_idx = row.new_full((num_nodes, ), -1)
+            node_idx[sg_nodes] = torch.arange(sg_nodes.size(0))
+
+            # create diffusion matrix from the sheaf Laplacian for the subgraph
+            L_step, cbdry_term = step_matrix_translational(node_idx[sg_edge_index], restriction_maps.unsqueeze(0), node_idx[this_boundary_vertices], node_idx[this_interior_vertices], b.unsqueeze(0), h=h, normalized=normalized)
+
+            # translation = ((cbdry_term@xt.flatten()) + b.flatten())
+            translation = cbdry_term
+            # take a diffusion step over the subgraph
+            model.entity_representations[0]._embeddings.weight[this_interior_vertices] -= (L_step @ xt.flatten() + translation).reshape((sg_nodes.shape[0], xt.shape[1]))[node_idx[this_interior_vertices]]
+            # check for numerical issues
+            if torch.isnan(xt).any():
+                print(xt)
+
+        iterations += 1
+        # converged = check_convergence(int_orig, xt[interior_ent_msk], tol=convergence_tol)
+
+    return model
     
 def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, model_type):
     assert list(relation_inclusion.keys()) == list(relation_inclusion.values())
     if model_type == 'se':
-        return expand_model_se(model, entity_inclusion, extended_graph)
+        expanded_model, interior_mask = expand_model_transe(model, entity_inclusion, extended_graph)
+        return expanded_model, interior_mask, diffuse_interior_se
+    if model_type == 'transe':
+        expanded_model, interior_mask = expand_model_transe(model, entity_inclusion, extended_graph)
+        return expanded_model, interior_mask, diffuse_interior_translational
 
 def run(model, dataset, num_epochs, random_seed, 
         embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
@@ -187,6 +267,7 @@ def run(model, dataset, num_epochs, random_seed,
     
     with torch.no_grad():
 
+        # evaluate model trained on evaluation data first, to get upper bound on expected performance
         print('evaluating eval model...')
         eval_result  = evaluator.evaluate(
             batch_size=evaluation_batch_size,
@@ -205,7 +286,7 @@ def run(model, dataset, num_epochs, random_seed,
         print('loading original model...')
         orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(evaluate_device)
         print('expanding original model to size of validation graph...')
-        orig_model, interior_mask = expand_model(orig_model, orig_eval_entity_inclusion, orig_eval_relation_inclusion, eval_graph, model)
+        orig_model, interior_mask, diffusion_fun = expand_model(orig_model, orig_eval_entity_inclusion, orig_eval_relation_inclusion, eval_graph, model)
 
         iteration = 0
         orig_result = evaluator.evaluate(
@@ -223,11 +304,13 @@ def run(model, dataset, num_epochs, random_seed,
         print(f'original model, iteration {iteration}:')
         print(orig_mr[orig_mr['Metric'] == 'hits_at_10'])
 
+        lrs = torch.linspace(1e-1, 1e-2, steps=diffusion_iterations)
+
         for iteration in range(1,diffusion_iterations+1):
             torch.cuda.empty_cache()
             print('diffusing model...')
-            orig_model = diffuse_interior_se(orig_model, eval_graph.mapped_triples, interior_mask, 
-                                            max_nodes=150, normalized=True, h=1e-1, k=1)
+            orig_model = diffusion_fun(orig_model, eval_graph.mapped_triples, interior_mask, 
+                                            max_nodes=100, normalized=True, h=1e-1, k=1)
 
             print('evaluating extended model...')
             # evaluate original model
