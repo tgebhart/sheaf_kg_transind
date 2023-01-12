@@ -12,7 +12,7 @@
       },
       "model": "TransE",
       "model_kwargs": {
-        "scoring_fct_norm": 2
+        "scoring_fct_norm": 1
       },
       "model_kwargs_ranges": {
         "embedding_dim": {
