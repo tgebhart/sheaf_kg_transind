@@ -36,16 +36,7 @@
           "scale": "log"
         }
       },
-      "training_loop": "slcwa",
-      "negative_sampler": "BasicNegativeSampler",
-      "negative_sampler_kwargs_ranges": {
-        "num_negs_per_pos": {
-          "type": "int",
-          "low": 1,
-          "high": 100,
-          "q": 1
-        }
-      },
+      "training_loop": "lcwa",
       "training_kwargs": {
         "num_epochs": 1000,
         "batch_size": 1024
