@@ -56,8 +56,14 @@
       },
       "training_kwargs": {
         "num_epochs": 1000,
-        "batch_size": 1024,
-        "label_smoothing": 0.0
+        "batch_size": 1024
+      },
+      "training_kwargs_ranges": {
+        "label_smoothing": {
+          "type": "float",
+          "low": 0.001,
+          "high": 1.0,
+          "scale": "log"
       },
       "evaluator": "RankBasedEvaluator",
       "evaluator_kwargs": {

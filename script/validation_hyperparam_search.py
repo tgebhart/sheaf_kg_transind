@@ -2,12 +2,11 @@ import os
 import argparse
 import json
 
-from pykeen.pipeline import pipeline
 from pykeen.hpo import hpo_pipeline_from_config
 from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
-MODEL = 'rotate'
+MODEL = 'transe'
 DATASET_PCT = 175
 GRAPH = 'valid'
 
