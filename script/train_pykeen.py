@@ -5,7 +5,6 @@ from pykeen.pipeline import pipeline
 from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
-BASE_DATA_PATH = 'data'
 MODEL = 'se'
 NUM_EPOCHS = 151
 C0_DIM = 32
