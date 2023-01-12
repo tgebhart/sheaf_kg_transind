@@ -22,15 +22,7 @@
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
-      "loss_kwargs_ranges": {
-        "margin": {
-          "type": "float",
-          "low": 1.0, 
-          "high": 3.0,
-          "scale": "linear"
-        }
-      },
+      "loss": "SoftplusLoss",
       "regularizer": "NoRegularizer",
       "optimizer": "adam",
       "optimizer_kwargs": {
