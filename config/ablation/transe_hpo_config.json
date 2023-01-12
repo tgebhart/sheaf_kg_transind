@@ -64,6 +64,7 @@
           "low": 0.001,
           "high": 1.0,
           "scale": "log"
+        }
       },
       "evaluator": "RankBasedEvaluator",
       "evaluator_kwargs": {
