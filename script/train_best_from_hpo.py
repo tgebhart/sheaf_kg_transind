@@ -15,7 +15,7 @@ def run(model, dataset, dataset_pct=DATASET_PCT, graph=GRAPH):
     train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
     train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
 
-    best_hpo_loc = f'data/{dataset}/{dataset_pct}/models/{graph}/{model}/ablation/best_pipeline/pipeline_config.json'
+    best_hpo_loc = f'data/{dataset}/{dataset_pct}/models/valid/{model}/ablation/best_pipeline/pipeline_config.json'
     
     def get_train_eval_sets(graph_type):
         if graph_type == 'train':
