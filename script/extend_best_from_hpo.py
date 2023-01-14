@@ -287,7 +287,7 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         print(eval_mr[eval_mr['Metric'] == 'hits_at_10'])
 
         print('loading original model...')
-        orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(diffusion_device)
+        orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(evaluate_device)
         print('expanding original model to size of validation graph...')
         orig_model, interior_mask, diffusion_fun = expand_model(orig_model, orig_eval_entity_inclusion, orig_eval_relation_inclusion, eval_graph, model)
 
@@ -313,11 +313,12 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
             torch.cuda.empty_cache()
             print('diffusing model...')
             print('orig model on cuda', next(orig_model.parameters()).is_cuda)
-            orig_model = diffusion_fun(orig_model, eval_graph.mapped_triples, interior_mask, 
+            orig_model = diffusion_fun(orig_model.to(diffusion_device), eval_graph.mapped_triples, interior_mask, 
                                             max_nodes=max_nodes, normalized=True, h=h, k=k, max_iterations=diffusion_iterations)
 
             print('evaluating extended model...')
             # evaluate extended model
+            print('orig model on cuda', next(orig_model.parameters()).is_cuda)
             orig_result = evaluator.evaluate(
                 batch_size=evaluation_batch_size,
                 model=orig_model,
