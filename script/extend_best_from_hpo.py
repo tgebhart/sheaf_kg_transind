@@ -18,7 +18,8 @@ EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-DEVICE = 'cuda'
+EVALUATION_DEVICE = 'cuda'
+DIFFUSION_DEVICE = 'cpu'
 
 CONVERGENCE_TOL = 1e-2
 DIFFUSION_ITERATIONS = 50
@@ -229,9 +230,10 @@ def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, mo
         expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_translational
 
-def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=MAX_NODES, 
-        dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
-        diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE):
+def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
+        h=LEARNING_RATE, k=K, max_nodes=MAX_NODES, dataset_pct=DATASET_PCT, 
+        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
+        evaluation_batch_size=EVALUATION_BATCH_SIZE):
 
     orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/hpo_best'
     eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/hpo_best'
@@ -274,6 +276,7 @@ def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=
         eval_result  = evaluator.evaluate(
             batch_size=evaluation_batch_size,
             model=eval_model,
+            device=evaluate_device,
             mapped_triples=eval_triples.mapped_triples,
             additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
@@ -284,14 +287,16 @@ def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=
         print(eval_mr[eval_mr['Metric'] == 'hits_at_10'])
 
         print('loading original model...')
-        orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(evaluate_device)
+        orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(diffusion_device)
         print('expanding original model to size of validation graph...')
         orig_model, interior_mask, diffusion_fun = expand_model(orig_model, orig_eval_entity_inclusion, orig_eval_relation_inclusion, eval_graph, model)
 
+        print('orig model on cuda', next(orig_model.parameters()).is_cuda)
         iteration = 0
         orig_result = evaluator.evaluate(
                 batch_size=evaluation_batch_size,
                 model=orig_model,
+                device=evaluate_device,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
@@ -307,6 +312,7 @@ def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=
         for iteration in range(1,diffusion_iterations+1):
             torch.cuda.empty_cache()
             print('diffusing model...')
+            print('orig model on cuda', next(orig_model.parameters()).is_cuda)
             orig_model = diffusion_fun(orig_model, eval_graph.mapped_triples, interior_mask, 
                                             max_nodes=max_nodes, normalized=True, h=h, k=k, max_iterations=diffusion_iterations)
 
@@ -315,6 +321,7 @@ def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=
             orig_result = evaluator.evaluate(
                 batch_size=evaluation_batch_size,
                 model=orig_model,
+                device=evaluate_device,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
@@ -356,7 +363,9 @@ if __name__ == '__main__':
                         help='inductive graph unknown entity relative percentage')                        
     training_args.add_argument('--model', type=str, required=False, default=MODEL,
                         help='name of model to train')
-    training_args.add_argument('--device', type=str, required=False, default=DEVICE,
+    training_args.add_argument('--evaluation-device', type=str, required=False, default=EVALUATION_DEVICE,
+                        help='device to perform evaluation on (cpu/cuda)')
+    training_args.add_argument('--diffusion-device', type=str, required=False, default=DIFFUSION_DEVICE,
                         help='device to perform diffusion on (cpu/cuda)')
     training_args.add_argument('--orig-graph', type=str, required=False, default=ORIG_GRAPH,
                         help='inductive graph to train on')
@@ -375,6 +384,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run(args.model, args.dataset, dataset_pct=args.dataset_pct, 
+    run(args.model, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
         h=args.learning_rate, k=args.k, max_nodes=args.max_nodes, diffusion_iterations=args.diffusion_iterations)
