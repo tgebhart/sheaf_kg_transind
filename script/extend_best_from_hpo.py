@@ -337,10 +337,11 @@ def run(model, dataset, evaluate_device=DEVICE, h=LEARNING_RATE, k=K, max_nodes=
 
     iteration_mrs = pd.concat(iteration_mrs)
     # save out
-    savedir = f'data/{dataset}/{dataset_pct}/extension_results/{eval_graph}/{model}'
+    savedir = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph}/{model}'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
-    iteration_mrs.to_csv(os.path.join(savedir, 'hpo_best_diffusion_metrics.csv'))
+    savename = f'metrics_{k}k_{max_nodes}max_nodes_{diffusion_iterations}iterations.csv'
+    iteration_mrs.to_csv(os.path.join(savedir, savename))
 
 
 
