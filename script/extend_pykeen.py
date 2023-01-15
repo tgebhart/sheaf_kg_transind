@@ -12,7 +12,7 @@ from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transr'
+MODEL = 'transe'
 NUM_EPOCHS = 50
 C0_DIM = 32
 C1_DIM = 32
@@ -77,7 +77,7 @@ def get_model_restriction_maps(model, triples):
         I = I.repeat(2, 1, 1).unsqueeze(0)
         restriction_maps = I.repeat(triples.shape[0], 1, 1, 1).to(model.device)
         return restriction_maps, translation
-    return restriction_maps
+    return None
 
 def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
     triples = extended_graph.mapped_triples
@@ -200,7 +200,7 @@ def diffuse_interior_translational(model, triples, interior_ent_msk,
             node_idx[sg_nodes] = torch.arange(sg_nodes.size(0))
 
             # create diffusion matrix from the sheaf Laplacian for the subgraph
-            L_step, cbdry_term = step_matrix_translational(node_idx[sg_edge_index], restriction_maps.unsqueeze(0), node_idx[this_boundary_vertices], node_idx[this_interior_vertices], b.unsqueeze(0), h=h, normalized=normalized)
+            L_step, cbdry_term = step_matrix_translational(node_idx[sg_edge_index], restriction_maps.unsqueeze(0), b.unsqueeze(0), h=h, normalized=normalized)
 
             # translation = ((cbdry_term@xt.flatten()) + b.flatten())
             translation = cbdry_term

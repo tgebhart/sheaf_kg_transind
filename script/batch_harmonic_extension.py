@@ -76,7 +76,7 @@ def step_matrix(edge_index, restriction_maps, boundary_vertices, interior_vertic
 
     return L
 
-def step_matrix_translational(edge_index, restriction_maps, boundary_vertices, interior_vertices, b, h=1, normalized=True):
+def step_matrix_translational(edge_index, restriction_maps, b, h=1, normalized=True):
     d = coboundary(edge_index,restriction_maps)
     L = torch.matmul(torch.transpose(d,1,2), d)
     dv = restriction_maps.shape[-1]

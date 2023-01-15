@@ -18,7 +18,7 @@
         "embedding_dim": {
           "type": "int",
           "low": 5,
-          "high": 8,
+          "high": 7,
           "scale": "power_two"
         }
       },
@@ -61,7 +61,7 @@
       },
       "training_kwargs": {
         "num_epochs": 1000,
-        "batch_size": 512,
+        "batch_size": null,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -69,7 +69,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 256
+        "batch_size": null
       }
     },
     "optuna": {
