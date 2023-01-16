@@ -314,7 +314,7 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
             print('diffusing model...')
             print('orig model on cuda', next(orig_model.parameters()).is_cuda)
             orig_model = diffusion_fun(orig_model.to(diffusion_device), eval_graph.mapped_triples, interior_mask, 
-                                            max_nodes=max_nodes, normalized=True, h=h, k=k, max_iterations=diffusion_iterations)
+                                            max_nodes=max_nodes, normalized=True, h=h, k=k, max_iterations=1)
 
             print('evaluating extended model...')
             # evaluate extended model
