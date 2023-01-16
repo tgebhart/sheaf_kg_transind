@@ -203,7 +203,7 @@ def diffuse_interior_translational(model, triples, interior_ent_msk,
             node_idx[sg_nodes] = torch.arange(sg_nodes.size(0))
 
             # create diffusion matrix from the sheaf Laplacian for the subgraph
-            L_step, cbdry_term = step_matrix_translational(node_idx[sg_edge_index], restriction_maps.unsqueeze(0), node_idx[this_boundary_vertices], node_idx[this_interior_vertices], b.unsqueeze(0), h=h, normalized=normalized)
+            L_step, cbdry_term = step_matrix_translational(node_idx[sg_edge_index], restriction_maps.unsqueeze(0), b.unsqueeze(0), h=h, normalized=normalized)
 
             # translation = ((cbdry_term@xt.flatten()) + b.flatten())
             translation = cbdry_term
