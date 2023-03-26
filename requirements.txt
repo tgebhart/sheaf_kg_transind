@@ -5,3 +5,4 @@ torch-geometric>=2.0.0
 ninja
 easydict
 pyyaml
+pykeen
