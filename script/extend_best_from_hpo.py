@@ -385,6 +385,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run(args.model, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+    # run(args.model, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+    #     orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+    #     h=args.learning_rate, k=args.k, max_nodes=args.max_nodes, diffusion_iterations=args.diffusion_iterations)
+
+    run('se', args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
         h=args.learning_rate, k=args.k, max_nodes=args.max_nodes, diffusion_iterations=args.diffusion_iterations)
