@@ -8,7 +8,7 @@ from data_tools import get_graphs, get_factories
 DATASET = 'fb15k-237'
 MODEL = 'transe'
 DATASET_PCT = 175
-GRAPH = 'valid'
+GRAPH = 'train'
 
 def run(model, dataset, dataset_pct=DATASET_PCT, graph=GRAPH):
 
