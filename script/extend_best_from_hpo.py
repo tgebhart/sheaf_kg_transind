@@ -345,7 +345,7 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
 
     iteration_mrs = pd.concat(iteration_mrs)
     # save out
-    savedir = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph}/{model}'
+    savedir = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     savename = f'metrics_{k}k_{max_nodes}max_nodes_{diffusion_iterations}iterations.csv'
