@@ -220,14 +220,12 @@ def diffuse_interior_translational(model, triples, interior_ent_msk,
     
 def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, model_type):
     assert list(relation_inclusion.keys()) == list(relation_inclusion.values())
+    expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
     if model_type == 'se':
-        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_se
     if model_type == 'transe':
-        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_translational
     if model_type == 'transr':
-        expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
         return expanded_model, interior_mask, diffuse_interior_translational
 
 def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
