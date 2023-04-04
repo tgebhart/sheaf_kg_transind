@@ -5,7 +5,7 @@ from pykeen.pipeline import pipeline
 from data_tools import get_graphs, get_factories
 
 DATASET = 'fb15k-237'
-MODEL = 'rotate'
+MODEL = 'transe'
 NUM_EPOCHS = 25
 C0_DIM = 32
 C1_DIM = 32

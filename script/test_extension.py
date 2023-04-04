@@ -12,7 +12,7 @@ from extension import SEExtender, TransEExtender, RotatEExtender, TransRExtender
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'se'
+MODEL = 'transe'
 NUM_EPOCHS = 25
 C0_DIM = 32
 C1_DIM = 32
