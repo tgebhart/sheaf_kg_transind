@@ -10,6 +10,7 @@ from pykeen.nn import Embedding
 
 from batch_harmonic_extension import step_matrix, step_matrix_translational
 from data_tools import get_graphs, get_factories
+from extension import interior_edge_mask, interior_boundary_edge_mask, SEExtender
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
@@ -159,6 +160,21 @@ def diffuse_interior_se(model, triples, interior_ent_msk,
 
     return model
 
+def extend_interior_se(model, triples, interior_ent_msk):
+    edge_index = triples[:,[0,2]].T
+    relations = triples[:,[1]].T
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+
+    int_edge_msk = interior_edge_mask(interior_vertices, edge_index)
+    int_boundary_edge_msk = interior_boundary_edge_mask(interior_vertices, edge_index)
+
+    extender = SEExtender(model=model)
+
+    xU = extender.harmonic_extension(int_edge_msk, int_boundary_edge_msk, edge_index, relations)
+    return xU
+
 def diffuse_interior_translational(model, triples, interior_ent_msk,
                     k=K, h=LEARNING_RATE, max_iterations=DIFFUSION_ITERATIONS, 
                     max_nodes=MAX_NODES, convergence_tol=CONVERGENCE_TOL, normalized=True):
@@ -307,6 +323,8 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
 
         iteration_mrs = []
 
+        xU = extend_interior_se(orig_model.to(diffusion_device), eval_graph.mapped_triples, interior_mask)
+
         for iteration in range(1,diffusion_iterations+1):
             torch.cuda.empty_cache()
             print('diffusing model...')
@@ -387,6 +405,6 @@ if __name__ == '__main__':
     #     orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
     #     h=args.learning_rate, k=args.k, max_nodes=args.max_nodes, diffusion_iterations=args.diffusion_iterations)
 
-    run('se', args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+    run('se', args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device='cpu',
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
         h=args.learning_rate, k=args.k, max_nodes=args.max_nodes, diffusion_iterations=args.diffusion_iterations)

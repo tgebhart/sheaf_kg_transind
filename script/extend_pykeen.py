@@ -9,11 +9,12 @@ from pykeen.nn import Embedding
 
 from batch_harmonic_extension import step_matrix, step_matrix_translational
 from data_tools import get_graphs, get_factories
+from extension import interior_edge_mask, interior_boundary_edge_mask, SEExtender
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
-NUM_EPOCHS = 50
+MODEL = 'se'
+NUM_EPOCHS = 25
 C0_DIM = 32
 C1_DIM = 32
 RANDOM_SEED = 134
@@ -114,7 +115,6 @@ def diffuse_interior_se(model, triples, interior_ent_msk,
     iterations = 0
 
     while not converged and iterations < max_iterations:
-        # int_orig = xt[interior_ent_msk]
         for ivix in tqdm(torch.randperm(interior_vertices.size(0)), desc='iterating over interior vertex subgraphs'):
             center_vertex = interior_vertices[ivix]
             sg_nodes, sg_edge_index, sg_node_map, sg_msk = k_hop_subgraph(center_vertex.item(), k, edge_index, 
@@ -156,6 +156,21 @@ def diffuse_interior_se(model, triples, interior_ent_msk,
         # converged = check_convergence(int_orig, xt[interior_ent_msk], tol=convergence_tol)
 
     return model
+
+def extend_interior_se(model, triples, interior_ent_msk):
+    edge_index = triples[:,[0,2]].T
+    relations = triples[:,[1]].T
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+
+    int_edge_msk = interior_edge_mask(interior_vertices, edge_index)
+    int_boundary_edge_msk = interior_boundary_edge_mask(interior_vertices, edge_index)
+
+    extender = SEExtender(model=model)
+
+    xU = extender.harmonic_extension(int_edge_msk, int_boundary_edge_msk, edge_index, relations)
+    return xU
 
 def diffuse_interior_translational(model, triples, interior_ent_msk,
                     k=1, h=1, max_iterations=1, max_nodes=100, convergence_tol=1e-2, normalized=True):
@@ -302,6 +317,9 @@ def run(model, dataset, num_epochs, random_seed,
         print(orig_mr[orig_mr['Metric'] == 'hits_at_10'])
 
         lrs = torch.linspace(1e-1, 1e-2, steps=diffusion_iterations)
+
+        print('extending...')
+        xU = extend_interior_se(orig_model.to('cpu'), eval_graph.mapped_triples, interior_mask)
 
         for iteration in range(1,diffusion_iterations+1):
             torch.cuda.empty_cache()
