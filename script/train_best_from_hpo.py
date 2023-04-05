@@ -3,7 +3,7 @@ import argparse
 import json
 
 from pykeen.pipeline import pipeline_from_config
-from data_tools import get_graphs, get_factories
+from data_tools import get_train_eval_inclusion_data
 
 DATASET = 'fb15k-237'
 MODEL = 'transe'
@@ -32,34 +32,21 @@ def train_model(training_set, testing_set, best_hpo_loc, savedir):
 
 def run(model, dataset, dataset_pct=DATASET_PCT, graph=GRAPH, eval_graph=EVAL_GRAPH):
 
-    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
-    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
-
     best_hpo_loc = f'data/{dataset}/{dataset_pct}/models/train/{model}/ablation/best_pipeline/pipeline_config.json'
-    
-    def get_train_eval_sets(graph_type):
-        if graph_type == 'train':
-            training_set = train_graph
-            eval_set = train_tf
-        elif graph_type == 'valid':
-            training_set = valid_graph
-            eval_set = valid_tf
-        elif graph_type == 'test':
-            training_set = test_graph 
-            eval_set = test_tf
-        else:
-            raise ValueError(f'unknown graph type {graph_type}')
-        return training_set, eval_set
-    
+        
     # model on training dataset (graph)
     print(f'TRAINING MODEL ON {graph} GRAPH...')
-    training_set, testing_set = get_train_eval_sets(graph)
+    tdata = get_train_eval_inclusion_data(dataset, dataset_pct, graph, graph)
+    training_set = tdata['orig']['triples']
+    testing_set = tdata['eval']['triples']
     savedir = f'data/{dataset}/{dataset_pct}/models/{graph}/{model}/hpo_best'
     train_model(training_set, testing_set, best_hpo_loc, savedir)
 
     # model on eval dataset (eval_graph)
     print(f'TRAINING MODEL ON {eval_graph} GRAPH...')
-    training_set, testing_set = get_train_eval_sets(eval_graph)
+    edata = get_train_eval_inclusion_data(dataset, dataset_pct, eval_graph, eval_graph)
+    training_set = edata['orig']['triples']
+    testing_set = edata['eval']['triples']
     savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph}/{model}/hpo_best'
     train_model(training_set, testing_set, best_hpo_loc, savedir)
     
@@ -76,7 +63,7 @@ if __name__ == '__main__':
     training_args.add_argument('--graph', type=str, required=False, default=GRAPH,
                         help='graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
-                        help='inductive graph to train on')
+                        help='inductive graph to train on for transductive comparison')
 
     args = parser.parse_args()
 

@@ -11,29 +11,33 @@ from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
+MODEL = 'se'
+NUM_EPOCHS = 25
+C0_DIM = 32
+C1_DIM = 32
+RANDOM_SEED = 134
+TRAINING_BATCH_SIZE = 64
 EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-EVALUATION_DEVICE = 'cuda'
-DIFFUSION_DEVICE = 'cuda'
+FROM_SAVE = True
 
 CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 5000
-EVAL_EVERY = 100
+EVAL_EVERY = 500
 ALPHA = 1e-1
+    
+def run(model, dataset, num_epochs, random_seed, 
+        embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
+        dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
+        diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
+        from_save=FROM_SAVE, alpha=ALPHA, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
-def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
-        alpha=ALPHA, dataset_pct=DATASET_PCT, 
-        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
-        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
+    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
+    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
-    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/hpo_best'
-    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/hpo_best'
-
-    savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}'
-    savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/hpo_best'
+    saveloc = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type)
     orig_graph = rdata['orig']['graph']
@@ -56,7 +60,6 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         eval_result  = evaluator.evaluate(
             batch_size=evaluation_batch_size,
             model=eval_model,
-            device=evaluate_device,
             mapped_triples=eval_triples.mapped_triples,
             additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
@@ -68,15 +71,23 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
 
         print('loading original model...')
         orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(evaluate_device)
-        print('expanding original model to size of validation graph...')
-        orig_model, interior_mask, diffusion_fun = expand_model_to_inductive_graph(orig_model, orig_eval_entity_inclusion, eval_graph)
+        if from_save:
+            orig_model = torch.load(os.path.join(saveloc, 'trained_model.pkl')).to(evaluate_device)
+            interior_mask = torch.load(os.path.join(saveloc, 'interior_mask.pkl'))
+        else:
+            print('expanding original model to size of validation graph...')
+            orig_model, interior_mask = expand_model_to_inductive_graph(orig_model, orig_eval_entity_inclusion, eval_graph)
+        
+        if not os.path.exists(saveloc):
+            os.makedirs(saveloc)
+        
+        torch.save(orig_model, os.path.join(saveloc, 'trained_model.pkl'))
+        torch.save(interior_mask, os.path.join(saveloc, 'interior_mask.pkl'))
 
-        print('orig model on cuda', next(orig_model.parameters()).is_cuda)
         iteration = 0
         orig_result = evaluator.evaluate(
                 batch_size=evaluation_batch_size,
                 model=orig_model,
-                device=evaluate_device,
                 mapped_triples=eval_triples.mapped_triples,
                 additional_filter_triples=[orig_triples.mapped_triples,
                                         eval_graph.mapped_triples]
@@ -88,9 +99,9 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         print(orig_mr[orig_mr['Metric'] == 'hits_at_10'])
 
         extender = get_extender(model)(model=orig_model, alpha=alpha)
-
+        
         res_df = []
-        for iteration in range(1, diffusion_iterations+1):
+        for iteration in range(diffusion_iterations):
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
 
             if iteration % eval_every == 0:
@@ -99,8 +110,7 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
 
                 orig_result = evaluator.evaluate(
                     batch_size=evaluation_batch_size,
-                    model=orig_model,
-                    device=evaluate_device,
+                    model=orig_model.to(evaluate_device),
                     mapped_triples=eval_triples.mapped_triples,
                     additional_filter_triples=[orig_triples.mapped_triples,
                                             eval_graph.mapped_triples]
@@ -126,14 +136,10 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
 
         # save out iteration results
         res_df = pd.concat(res_df, axis=0, ignore_index=True)
-        if not os.path.exists(savedir_results):
-            os.makedirs(savedir_results)
-        res_df.to_csv(os.path.join(savedir_results, f'metrics_{diffusion_iterations}iterations_{alpha}alpha.csv'), index=False)
-
+        res_df.to_csv(os.path.join(saveloc, f'metrics_{diffusion_iterations}iterations_{alpha}alpha.csv'), index=False)
+        
         # save out extended model
-        if not os.path.exists(savedir_model):
-            os.makedirs(savedir_model)
-        torch.save(orig_model, os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
+        torch.save(orig_model, os.path.join(saveloc, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
@@ -141,14 +147,18 @@ if __name__ == '__main__':
     training_args = parser.add_argument_group('training')
     training_args.add_argument('--dataset', type=str, default=DATASET,
                         help='dataset to run')
+    training_args.add_argument('--num-epochs', type=int, default=NUM_EPOCHS,
+                        help='number of training epochs')
+    training_args.add_argument('--embedding-dim', type=int, default=C0_DIM,
+                        help='entity embedding dimension')
+    training_args.add_argument('--c1-dimension', type=int, default=C1_DIM,
+                        help='entity embedding dimension')
     training_args.add_argument('--dataset-pct', type=int, default=DATASET_PCT,
                         help='inductive graph unknown entity relative percentage')                        
+    training_args.add_argument('--random-seed', type=int, default=RANDOM_SEED,
+                        help='random seed')
     training_args.add_argument('--model', type=str, required=False, default=MODEL,
                         help='name of model to train')
-    training_args.add_argument('--evaluation-device', type=str, required=False, default=EVALUATION_DEVICE,
-                        help='device to perform evaluation on (cpu/cuda)')
-    training_args.add_argument('--diffusion-device', type=str, required=False, default=DIFFUSION_DEVICE,
-                        help='device to perform diffusion on (cpu/cuda)')
     training_args.add_argument('--orig-graph', type=str, required=False, default=ORIG_GRAPH,
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
@@ -164,9 +174,9 @@ if __name__ == '__main__':
     training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
                         help='diffusion convergence tolerance within which to stop diffusing')
 
-
     args = parser.parse_args()
 
-    run(args.model, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+    run(args.model, args.dataset, args.num_epochs, args.random_seed,
+        args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-        alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
+         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
