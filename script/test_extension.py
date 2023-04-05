@@ -1,18 +1,17 @@
 import os
 import argparse
 
-from tqdm import tqdm
+import pandas as pd
 import torch
-from torch_geometric.utils import remove_self_loops
 from pykeen.evaluation import RankBasedEvaluator
-from pykeen.nn import Embedding
 
-from data_tools import get_graphs, get_factories
-from extension import SEExtender, TransEExtender, RotatEExtender, TransRExtender
+from data_tools import get_train_eval_inclusion_data
+from utils import expand_model_to_inductive_graph
+from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
+MODEL = 'se'
 NUM_EPOCHS = 25
 C0_DIM = 32
 C1_DIM = 32
@@ -22,122 +21,31 @@ EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-FROM_SAVE = False
+FROM_SAVE = True
 
-CONVERGENCE_TOL = 1e-2
+CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 5000
 EVAL_EVERY = 500
 ALPHA = 1e-1
-
-def graph_entity_inclusion_map(subgraph_tf, graph_tf):
-    subgraph_entity_id_to_label = subgraph_tf.entity_id_to_label
-    graph_label_to_entity_id = graph_tf.entity_to_id
-    return {k:graph_label_to_entity_id[v] for k,v in subgraph_entity_id_to_label.items() if v in graph_label_to_entity_id}
-
-def graph_relation_inclusion_map(subgraph_tf, graph_tf):
-    subgraph_relation_id_to_label = subgraph_tf.relation_id_to_label
-    graph_label_to_relation_id = graph_tf.relation_to_id
-    # relations should always be the same
-    return {k:graph_label_to_relation_id[v] for k,v in subgraph_relation_id_to_label.items() if v in graph_label_to_relation_id}
-
-def expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new, dtype=None):
-    oe = model.entity_representations[0]
-    if model._get_name() == 'RotatE':
-        dtype = torch.cfloat
-    new_embeddings = Embedding(num_embeddings=num_embeddings_new, 
-                                        shape=oe.shape,  
-                                        initializer=oe.initializer,
-                                        constrainer=oe.constrainer,
-                                        trainable=False,
-                                        dtype=dtype).to(model.device)
-    new_embeddings._embeddings.weight[boundary_vertices_extended] = torch.clone(oe._embeddings.weight[boundary_vertices_original])
-    model.entity_representations[0] = new_embeddings
-    return model
-
-def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
-    triples = extended_graph.mapped_triples
-    edge_index = triples[:,[0,2]].T
-    all_ents = edge_index.flatten().unique()
-
-    # determine which vertices are in boundary in both train and extended (inductive) graphs
-    boundary_vertices_extended = list(entity_inclusion.values())
-    boundary_vertices_original = list(entity_inclusion.keys())
-    # interior vertices are the set difference of all nodes and the boundary
-    interior_ent_msk = torch.as_tensor([e not in boundary_vertices_extended for e in all_ents])
-    interior_vertices = all_ents[interior_ent_msk]
-
-    boundary_vertices_extended = torch.LongTensor(boundary_vertices_extended)
-    boundary_vertices_original = torch.LongTensor(boundary_vertices_original)
-    assert interior_vertices.shape[0] + boundary_vertices_extended.shape[0] == all_ents.shape[0]
-
-    # expand pykeen model to accomodate new entities introduced by inductive graph
-    num_embeddings_new = all_ents.shape[0]
-    print('reinitializing unknown entities according to model embedding')
-    model = expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new)
-    return model, interior_ent_msk
-
-def diffuse_interior(diffuser, triples, interior_ent_msk):
-    edge_index = triples[:,[0,2]].T
-    relations = triples[:,1]
-    all_ents = edge_index.flatten().unique()
-    num_nodes = all_ents.size(0)
-    interior_vertices = all_ents[interior_ent_msk]
-
-    # edge_index, relations = remove_self_loops(edge_index, relations)
-
-    xU = diffuser.diffuse_interior(edge_index, relations, interior_vertices, nv=num_nodes)
-    return xU
     
-def expand_model(model, entity_inclusion, relation_inclusion, extended_graph, model_type):
-    assert list(relation_inclusion.keys()) == list(relation_inclusion.values())
-    expanded_model, interior_mask = expand_model_to_inductive_graph(model, entity_inclusion, extended_graph)
-    return expanded_model, interior_mask
-    
-def get_extender(model_type):
-    if model_type == 'se':
-        return SEExtender
-    if model_type == 'transe':
-        return TransEExtender
-    if model_type == 'rotate':
-        return RotatEExtender
-    if model_type == 'transr':
-        return TransRExtender
-
 def run(model, dataset, num_epochs, random_seed, 
         embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
-        from_save=FROM_SAVE, alpha=ALPHA, eval_every=EVAL_EVERY):
+        from_save=FROM_SAVE, alpha=ALPHA, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
     orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
     eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
     saveloc = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
-    print('loading getting factories and graphs...')
-    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
-    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
-    
-    def get_train_eval_sets(graph_type):
-        if graph_type == 'train':
-            training_set = train_graph
-            eval_set = train_tf
-        elif graph_type == 'valid':
-            training_set = valid_graph
-            eval_set = valid_tf
-        elif graph_type == 'test':
-            training_set = test_graph
-            eval_set = test_tf
-        else:
-            raise ValueError(f'unknown graph type {graph_type}')
-        return training_set, eval_set
-
-    orig_graph, orig_triples = get_train_eval_sets(orig_graph_type)
-    eval_graph, eval_triples = get_train_eval_sets(eval_graph_type)
-
-    print('computing orig-->eval inclusion maps...')
-    orig_eval_entity_inclusion = graph_entity_inclusion_map(orig_graph, eval_graph)
-    orig_eval_relation_inclusion = graph_relation_inclusion_map(orig_graph, eval_graph)
+    rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type)
+    orig_graph = rdata['orig']['graph']
+    orig_triples = rdata['orig']['triples']
+    eval_graph = rdata['eval']['graph']
+    eval_triples = rdata['eval']['triples']
+    orig_eval_entity_inclusion = rdata['inclusion']['entities']
+    orig_eval_relation_inclusion = rdata['inclusion']['relations']
 
     # Define evaluator
     evaluator = RankBasedEvaluator()
@@ -168,7 +76,7 @@ def run(model, dataset, num_epochs, random_seed,
             interior_mask = torch.load(os.path.join(saveloc, 'interior_mask.pkl'))
         else:
             print('expanding original model to size of validation graph...')
-            orig_model, interior_mask = expand_model(orig_model, orig_eval_entity_inclusion, orig_eval_relation_inclusion, eval_graph, model)
+            orig_model, interior_mask = expand_model_to_inductive_graph(orig_model, orig_eval_entity_inclusion, eval_graph)
         
         if not os.path.exists(saveloc):
             os.makedirs(saveloc)
@@ -190,19 +98,11 @@ def run(model, dataset, num_epochs, random_seed,
         print(f'original model, iteration {iteration}:')
         print(orig_mr[orig_mr['Metric'] == 'hits_at_10'])
 
-        lrs = torch.linspace(1e-1, 1e-2, steps=diffusion_iterations)
-
-        # print('extending...')
-        # triples = eval_graph.mapped_triples
-        # xU = extend_interior_se(orig_model.to('cpu'), triples, interior_mask)
-        # print()
-
         extender = get_extender(model)(model=orig_model, alpha=alpha)
         
+        res_df = []
         for iteration in range(diffusion_iterations):
-            # print('diffusing...')
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
-            # print(xU.sum())
 
             if iteration % eval_every == 0:
 
@@ -223,13 +123,23 @@ def run(model, dataset, num_epochs, random_seed,
                 diff_mr['iteration_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_iteration']
                 diff_mr['orig_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_original']
                 diff_mr['eval_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_eval']
+                diff_mr['iteration'] = iteration
                 print(f'difference from orig model, iteration {iteration}:')
                 print(diff_mr[diff_mr['Metric'] == 'hits_at_10'])
 
                 prev_it_mr = it_mr
+                res_df.append(diff_mr)
 
-                print()
+                it_diff = diff_mr[(diff_mr['Side'] == 'both') & (diff_mr['Type'] == 'realistic') & (diff_mr['Metric'] == 'hits_at_10')]
+                if it_diff['iteration_difference'].values[0] < convergence_tol and iteration > 10:
+                    break
 
+        # save out iteration results
+        res_df = pd.concat(res_df, axis=0, ignore_index=True)
+        res_df.to_csv(os.path.join(saveloc, f'metrics_{diffusion_iterations}iterations_{alpha}alpha.csv'), index=False)
+        
+        # save out extended model
+        torch.save(orig_model, os.path.join(saveloc, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
@@ -255,9 +165,18 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
+    training_args.add_argument('--alpha', type=float, default=ALPHA,
+                        help='diffusion learning rate (h)')
+    training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
+                        help='number of diffusion steps')
+    training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
+                        help='number of diffusion steps to take between each evaluation')
+    training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
+                        help='diffusion convergence tolerance within which to stop diffusing')
 
     args = parser.parse_args()
 
     run(args.model, args.dataset, args.num_epochs, args.random_seed,
         args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size)
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

@@ -78,3 +78,45 @@ def get_factories(dataset, pct):
                                         entity_to_id=test_graph.entity_to_id, relation_to_id=test_graph.relation_to_id)
 
     return train, validate, test
+
+def graph_entity_inclusion_map(subgraph_tf, graph_tf):
+    subgraph_entity_id_to_label = subgraph_tf.entity_id_to_label
+    graph_label_to_entity_id = graph_tf.entity_to_id
+    return {k:graph_label_to_entity_id[v] for k,v in subgraph_entity_id_to_label.items() if v in graph_label_to_entity_id}
+
+def graph_relation_inclusion_map(subgraph_tf, graph_tf):
+    subgraph_relation_id_to_label = subgraph_tf.relation_id_to_label
+    graph_label_to_relation_id = graph_tf.relation_to_id
+    # relations should always be the same
+    return {k:graph_label_to_relation_id[v] for k,v in subgraph_relation_id_to_label.items() if v in graph_label_to_relation_id}
+
+def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type):
+    print('loading factories and graphs...')
+    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
+    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
+    
+    def get_train_eval_sets(graph_type):
+        if graph_type == 'train':
+            training_set = train_graph
+            eval_set = train_tf
+        elif graph_type == 'valid':
+            training_set = valid_graph
+            eval_set = valid_tf
+        elif graph_type == 'test':
+            training_set = test_graph
+            eval_set = test_tf
+        else:
+            raise ValueError(f'unknown graph type {graph_type}')
+        return training_set, eval_set
+
+    orig_graph, orig_triples = get_train_eval_sets(orig_graph_type)
+    eval_graph, eval_triples = get_train_eval_sets(eval_graph_type)
+
+    print('computing orig-->eval inclusion maps...')
+    orig_eval_entity_inclusion = graph_entity_inclusion_map(orig_graph, eval_graph)
+    orig_eval_relation_inclusion = graph_relation_inclusion_map(orig_graph, eval_graph)
+
+    r = {'orig':{'graph':orig_graph, 'triples':orig_triples},
+        'eval':{'graph':eval_graph, 'triples':eval_triples},
+        'inclusion':{'entities':orig_eval_entity_inclusion, 'relations':orig_eval_relation_inclusion}}
+    return r

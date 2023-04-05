@@ -12,19 +12,6 @@ from pykeen.utils import clamp_norm
 
 ALPHA = 1e-1
 
-def interior_edge_mask(interior_vertices: torch.LongTensor, 
-                    edge_index: torch.LongTensor):
-    return torch.isin(edge_index, interior_vertices)
-
-def interior_interior_edge_mask(interior_vertices: torch.LongTensor, 
-                        edge_index: torch.LongTensor):
-    return torch.all(torch.isin(edge_index, interior_vertices), dim=0)
-
-def interior_boundary_edge_mask(interior_vertices: torch.LongTensor, 
-                        edge_index: torch.LongTensor):
-    isin = torch.isin(edge_index, interior_vertices)
-    return torch.logical_xor(isin[0,:], isin[1,:])
-
 def coboundary(edge_index,Fh,Ft,relabel=False):
     device = Fh.device
     if relabel:
@@ -40,6 +27,16 @@ def coboundary(edge_index,Fh,Ft,relabel=False):
         d[e*de:(e+1)*de,h*dv:(h+1)*dv] = Fh[e,:,:]
         d[e*de:(e+1)*de,t*dv:(t+1)*dv] = -Ft[e,:,:]
     return d
+
+def diffuse_interior(diffuser, triples, interior_ent_msk):
+    edge_index = triples[:,[0,2]].T
+    relations = triples[:,1]
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+
+    xU = diffuser.diffuse_interior(edge_index, relations, interior_vertices, nv=num_nodes)
+    return xU
 
 class KGExtender():
     '''Harmonic extension base class.
@@ -68,7 +65,7 @@ class KGExtender():
         return torch.matmul(torch.transpose(d,0,1), d)
     
     def laplacian_UB_quad(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor):
-        '''
+        '''TODO
         '''
         xh, xt = self._ht(edge_index)
         Fh, Ft = self._restriction_maps(edge_type)
@@ -138,7 +135,7 @@ class SEExtender(KGExtender):
                             edge_index: torch.LongTensor,
                             edge_type: torch.LongTensor) -> torch.Tensor:
 
-        # sorted_
+        # TODO
         LUU = self.laplacian_block_dense(edge_index[:,interior_mask], edge_type[:,interior_mask])
         LUU_inv = torch.linalg.pinv(LUU)
         LUB = self.laplacian_block_dense(edge_index[:,interior_boundary_mask], edge_type[:,interior_boundary_mask])
@@ -289,3 +286,13 @@ class TransRExtender(KGExtender):
         self.model.entity_representations[0]._embeddings.weight[interior_vertices] -= self.alpha*xU[interior_vertices]
         return xU
     
+
+def get_extender(model_type):
+    if model_type == 'se':
+        return SEExtender
+    if model_type == 'transe':
+        return TransEExtender
+    if model_type == 'rotate':
+        return RotatEExtender
+    if model_type == 'transr':
+        return TransRExtender

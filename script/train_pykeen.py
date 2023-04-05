@@ -2,13 +2,13 @@ import os
 import argparse
 
 from pykeen.pipeline import pipeline
-from data_tools import get_graphs, get_factories
+from data_tools import get_train_eval_inclusion_data
 
 DATASET = 'fb15k-237'
-MODEL = 'transe'
+MODEL = 'transr'
 NUM_EPOCHS = 25
 C0_DIM = 32
-C1_DIM = 32
+C1_DIM = 16
 RANDOM_SEED = 134
 DATASET_PCT = 175
 GRAPH = 'train'
@@ -16,27 +16,13 @@ GRAPH = 'train'
 def run(model, dataset, num_epochs, random_seed,
         embedding_dim, c1_dimension=None, dataset_pct=DATASET_PCT,
         graph=GRAPH):
-
-    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
-    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
     
     train_device = 'cuda'
 
-    def get_train_eval_sets(graph_type):
-        if graph_type == 'train':
-            training_set = train_graph
-            eval_set = train_tf
-        elif graph_type == 'valid':
-            training_set = valid_graph
-            eval_set = valid_tf
-        elif graph_type == 'test':
-            training_set = test_graph
-            eval_set = test_tf
-        else:
-            raise ValueError(f'unknown graph type {graph_type}')
-        return training_set, eval_set
-    
-    training_set, testing_set = get_train_eval_sets(graph)
+    rdata = get_train_eval_inclusion_data(dataset, dataset_pct, graph, graph)
+
+    training_set = rdata['orig']['triples']
+    testing_set = rdata['eval']['triples']
     
     model_kwargs = {'embedding_dim': embedding_dim, 'scoring_fct_norm': 2}
     if model == 'rotate':
