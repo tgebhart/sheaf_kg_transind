@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import torch
 from pykeen.triples import TriplesFactory
 
 BASE_DATA_PATH = 'data'
@@ -120,3 +121,18 @@ def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_gr
         'eval':{'graph':eval_graph, 'triples':eval_triples},
         'inclusion':{'entities':orig_eval_entity_inclusion, 'relations':orig_eval_relation_inclusion}}
     return r
+
+def split_mapped_triples(triples_factory, train_pct=0.95):
+    triples = triples_factory.mapped_triples
+    ntrip = triples.size(0)
+    perm = torch.randperm(ntrip)
+    k = int(train_pct*ntrip)
+    msk = torch.zeros(ntrip, dtype=torch.bool)
+    idx = perm[:k]
+    msk[idx] = True
+    train_triples = triples[msk]
+    eval_triples = triples[~msk]
+
+    train = triples_factory.clone_and_exchange_triples(train_triples)
+    eval = triples_factory.clone_and_exchange_triples(eval_triples)
+    return train, eval

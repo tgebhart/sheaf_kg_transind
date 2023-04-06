@@ -3,7 +3,7 @@ import argparse
 import json
 
 from pykeen.hpo import hpo_pipeline_from_config
-from data_tools import get_train_eval_inclusion_data
+from data_tools import get_train_eval_inclusion_data, split_mapped_triples
 
 DATASET = 'fb15k-237'
 MODEL = 'transe'
@@ -15,7 +15,8 @@ def run(model, dataset, dataset_pct=DATASET_PCT, graph=GRAPH):
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, graph, graph)
     training_set = rdata['orig']['triples']
     testing_set = rdata['eval']['triples']
-    
+    if graph == 'train':
+        training_set, testing_set = split_mapped_triples(training_set)
     hpo_config_loc = os.path.join(f'config/ablation/{model}_hpo_config.json')
     with open(hpo_config_loc, 'r') as f:
         config = json.load(f)

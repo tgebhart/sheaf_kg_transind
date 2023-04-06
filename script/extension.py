@@ -117,7 +117,8 @@ class SEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
+            # degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
+            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -177,7 +178,7 @@ class TransEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
+            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -222,7 +223,7 @@ class RotatEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
+            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -275,7 +276,7 @@ class TransRExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
+            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
