@@ -110,7 +110,8 @@ def run(model, dataset, num_epochs, random_seed,
 
                 orig_result = evaluator.evaluate(
                     batch_size=evaluation_batch_size,
-                    model=orig_model.to(evaluate_device),
+                    model=orig_model,
+                    device=evaluate_device,
                     mapped_triples=eval_triples.mapped_triples,
                     additional_filter_triples=[orig_triples.mapped_triples,
                                             eval_graph.mapped_triples]
