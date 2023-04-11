@@ -2,6 +2,9 @@
 import torch
 from pykeen.nn import Embedding
 
+def batch_chunk(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
 def expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new, dtype=None):
     oe = model.entity_representations[0]
     if model._get_name() == 'RotatE':

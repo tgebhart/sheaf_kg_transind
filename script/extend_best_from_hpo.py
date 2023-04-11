@@ -8,6 +8,7 @@ from pykeen.evaluation import RankBasedEvaluator
 from data_tools import get_train_eval_inclusion_data
 from utils import expand_model_to_inductive_graph
 from extension import get_extender, diffuse_interior
+from complex_data_info import QUERY_STRUCTURES
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
@@ -27,7 +28,8 @@ ALPHA = 1e-1
 def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
         alpha=ALPHA, dataset_pct=DATASET_PCT, 
         orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
-        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
+        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL,
+        query_structures=QUERY_STRUCTURES):
 
     orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/hpo_best'
     eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/hpo_best'

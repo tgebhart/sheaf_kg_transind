@@ -11,17 +11,17 @@ from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'se'
+MODEL = 'transr'
 NUM_EPOCHS = 25
 C0_DIM = 32
-C1_DIM = 32
+C1_DIM = 16
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
 EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-FROM_SAVE = True
+FROM_SAVE = False
 
 CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 5000
