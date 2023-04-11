@@ -462,10 +462,11 @@ class TransRComplex(ComplexExtender):
     def _check_model_type(self):
         assert isinstance(self.model, TransR)
 
-    def _restriction_maps(self, edge_type:torch.LongTensor) -> Tuple[torch.Tensor]:
+    def _restriction_maps(self, edge_type:torch.LongTensor) -> torch.Tensor:
         nu = torch.LongTensor([0])
         _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
-        restriction_maps = torch.cat([tr.unsqueeze(2) for tr in r[:2]], dim=2)
+        ret = torch.transpose(r[1],-1,-2)
+        restriction_maps = torch.cat([ret.unsqueeze(2), ret.unsqueeze(2)], dim=2)
         return restriction_maps
     
     def _b(self, edge_type:torch.LongTensor) -> Tuple[torch.Tensor]:
