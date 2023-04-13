@@ -6,36 +6,31 @@ import pandas as pd
 import torch
 from pykeen.evaluation import RankBasedEvaluator
 
-from data_tools import get_train_eval_inclusion_data
-from utils import expand_model_to_inductive_graph
+from data_tools import get_train_eval_inclusion_data, get_model_name_from_config
 from complex_extension import get_complex_extender
 from complex_data_info import QUERY_STRUCTURES
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'se'
-NUM_EPOCHS = 25
-C0_DIM = 32
-C1_DIM = 32
-RANDOM_SEED = 134
-TRAINING_BATCH_SIZE = 64
+HPO_CONFIG_NAME = 'transe_hpo_config'
 EVALUATION_BATCH_SIZE = 32
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-FROM_SAVE = True
+EVALUATE_DEVICE = 'cuda'
 
-CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 5000
 ALPHA = 1e-1
     
-def run(model, dataset, num_epochs, random_seed, 
-        embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
+def run(hpo_config_name, dataset, evaluate_device=EVALUATE_DEVICE, 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
-        from_save=FROM_SAVE, alpha=ALPHA, convergence_tol=CONVERGENCE_TOL, query_structures=QUERY_STRUCTURES):
+        alpha=ALPHA, query_structures=QUERY_STRUCTURES):
+    
+    model = get_model_name_from_config(hpo_config_name)
 
-    saveloc = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
+    savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
+    savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
 
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type, include_complex=True)
     orig_graph = rdata['orig']['graph']
@@ -49,7 +44,7 @@ def run(model, dataset, num_epochs, random_seed,
     evaluator = RankBasedEvaluator()
 
     print('loading eval model...')
-    eval_model = torch.load(os.path.join(saveloc, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl')).to(evaluate_device)
+    eval_model = torch.load(os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl')).to(evaluate_device)
     with torch.no_grad():
 
         extender = get_complex_extender(model)(model=eval_model)
@@ -81,29 +76,22 @@ def run(model, dataset, num_epochs, random_seed,
             print(result_df.set_index(['Side','Type','Metric']).loc['tail','realistic','hits_at_10'])
             results.append(result_df)
             evaluator.clear()
-            print()
 
     res_df = pd.concat(results, ignore_index=True)
-    res_df.to_csv(os.path.join(saveloc, 'complex_extension.csv'), index=False)
+    if not os.path.exists(savedir_results):
+            os.makedirs(savedir_results)
+    res_df.to_csv(os.path.join(savedir_results, 'complex_extension_results.csv'), index=False)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
+    parser = argparse.ArgumentParser(description='complex reasoning task')
     # Training Hyperparameters
     training_args = parser.add_argument_group('training')
     training_args.add_argument('--dataset', type=str, default=DATASET,
                         help='dataset to run')
-    training_args.add_argument('--num-epochs', type=int, default=NUM_EPOCHS,
-                        help='number of training epochs')
-    training_args.add_argument('--embedding-dim', type=int, default=C0_DIM,
-                        help='entity embedding dimension')
-    training_args.add_argument('--c1-dimension', type=int, default=C1_DIM,
-                        help='entity embedding dimension')
     training_args.add_argument('--dataset-pct', type=int, default=DATASET_PCT,
                         help='inductive graph unknown entity relative percentage')                        
-    training_args.add_argument('--random-seed', type=int, default=RANDOM_SEED,
-                        help='random seed')
-    training_args.add_argument('--model', type=str, required=False, default=MODEL,
-                        help='name of model to train')
+    training_args.add_argument('--hpo-config-name', type=str, default=HPO_CONFIG_NAME,
+                        help='name of hyperparameter search configuration file')
     training_args.add_argument('--orig-graph', type=str, required=False, default=ORIG_GRAPH,
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
@@ -114,12 +102,9 @@ if __name__ == '__main__':
                         help='diffusion learning rate')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
-    training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
-                        help='diffusion convergence tolerance within which to stop diffusing')
 
     args = parser.parse_args()
 
-    run(args.model, args.dataset, args.num_epochs, args.random_seed,
-        args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
+    run(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, convergence_tol=args.convergence_tolerance)
+         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations)

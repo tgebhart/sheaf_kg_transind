@@ -1,5 +1,6 @@
 
 import torch
+import numpy as np
 from pykeen.nn import Embedding
 
 def batch_chunk(seq, size):
@@ -40,3 +41,6 @@ def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
     print('reinitializing unknown entities according to model embedding')
     model = expand_entity_embeddings(model, boundary_vertices_original, boundary_vertices_extended, num_embeddings_new)
     return model, interior_ent_msk
+
+def generate_eval_logspace(iterations, num):
+    return np.around(np.logspace(0,np.log10(int(iterations)),int(num))).astype(np.uint64)

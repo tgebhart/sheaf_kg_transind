@@ -1,5 +1,6 @@
 import os
 import pickle
+import json
 
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ from pykeen.triples import TriplesFactory
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
 
 BASE_DATA_PATH = 'data'
+BASE_CONFIG_PATH = 'config/ablation'
 
 def find_dataset_betae(dataset, pct):
     basepath = f'{BASE_DATA_PATH}/{dataset}/{pct}'
@@ -243,3 +245,14 @@ def split_mapped_triples(triples_factory, train_pct=0.95):
     train = triples_factory.clone_and_exchange_triples(train_triples)
     eval = triples_factory.clone_and_exchange_triples(eval_triples)
     return train, eval
+
+def load_hpo_config(hpo_config_name: str) -> dict:
+    hpo_config_fname = hpo_config_name if '.json' in hpo_config_name else f'{hpo_config_name}.json'
+    hpo_config_loc = os.path.join(os.path.join(BASE_CONFIG_PATH, hpo_config_fname))
+    with open(hpo_config_loc, 'r') as f:
+        config = json.load(f)
+    return config
+
+def get_model_name_from_config(hpo_config_name: str) -> str:
+    config = load_hpo_config(hpo_config_name)
+    return config['pipeline']['model'].lower()

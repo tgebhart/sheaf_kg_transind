@@ -5,14 +5,13 @@ import pandas as pd
 import torch
 from pykeen.evaluation import RankBasedEvaluator
 
-from data_tools import get_train_eval_inclusion_data
-from utils import expand_model_to_inductive_graph
+from data_tools import get_train_eval_inclusion_data, get_model_name_from_config
+from utils import expand_model_to_inductive_graph, generate_eval_logspace
 from extension import get_extender, diffuse_interior
-from complex_data_info import QUERY_STRUCTURES
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
+HPO_CONFIG_NAME = 'transe_hpo_config'
 EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
@@ -22,20 +21,21 @@ DIFFUSION_DEVICE = 'cuda'
 
 CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 5000
-EVAL_EVERY = 100
+EVAL_EVERY = 50
 ALPHA = 1e-1
 
-def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
+def run(hpo_config_name, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
         alpha=ALPHA, dataset_pct=DATASET_PCT, 
         orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
-        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL,
-        query_structures=QUERY_STRUCTURES):
+        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
-    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/hpo_best'
-    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/hpo_best'
+    model = get_model_name_from_config(hpo_config_name)
 
-    savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}'
-    savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/hpo_best'
+    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{hpo_config_name}/hpo_best'
+    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
+
+    savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}/{hpo_config_name}'
+    savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
 
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type)
     orig_graph = rdata['orig']['graph']
@@ -71,7 +71,7 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         print('loading original model...')
         orig_model = torch.load(os.path.join(orig_savedir, 'trained_model.pkl')).to(evaluate_device)
         print('expanding original model to size of validation graph...')
-        orig_model, interior_mask, diffusion_fun = expand_model_to_inductive_graph(orig_model, orig_eval_entity_inclusion, eval_graph)
+        orig_model, interior_mask = expand_model_to_inductive_graph(orig_model, orig_eval_entity_inclusion, eval_graph)
 
         print('orig model on cuda', next(orig_model.parameters()).is_cuda)
         iteration = 0
@@ -92,10 +92,11 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         extender = get_extender(model)(model=orig_model, alpha=alpha)
 
         res_df = []
+        eval_iterations = generate_eval_logspace(diffusion_iterations, diffusion_iterations//eval_every) 
         for iteration in range(1, diffusion_iterations+1):
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
 
-            if iteration % eval_every == 0:
+            if iteration in eval_iterations:
 
                 print(xU.sum())
 
@@ -123,8 +124,8 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
                 res_df.append(diff_mr)
 
                 it_diff = diff_mr[(diff_mr['Side'] == 'both') & (diff_mr['Type'] == 'realistic') & (diff_mr['Metric'] == 'hits_at_10')]
-                if it_diff['iteration_difference'].values[0] < convergence_tol and iteration > 10:
-                    break
+                # if it_diff['iteration_difference'].values[0] < convergence_tol and iteration > 10:
+                    # break
 
         # save out iteration results
         res_df = pd.concat(res_df, axis=0, ignore_index=True)
@@ -138,15 +139,15 @@ def run(model, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFF
         torch.save(orig_model, os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
+    parser = argparse.ArgumentParser(description='harmonic extension task')
     # Training Hyperparameters
     training_args = parser.add_argument_group('training')
     training_args.add_argument('--dataset', type=str, default=DATASET,
                         help='dataset to run')
     training_args.add_argument('--dataset-pct', type=int, default=DATASET_PCT,
                         help='inductive graph unknown entity relative percentage')                        
-    training_args.add_argument('--model', type=str, required=False, default=MODEL,
-                        help='name of model to train')
+    training_args.add_argument('--hpo-config-name', type=str, default=HPO_CONFIG_NAME,
+                        help='name of hyperparameter search configuration file')
     training_args.add_argument('--evaluation-device', type=str, required=False, default=EVALUATION_DEVICE,
                         help='device to perform evaluation on (cpu/cuda)')
     training_args.add_argument('--diffusion-device', type=str, required=False, default=DIFFUSION_DEVICE,
@@ -169,6 +170,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run(args.model, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+    run(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
