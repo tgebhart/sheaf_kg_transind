@@ -5,6 +5,7 @@ import json
 import numpy as np
 import pandas as pd
 import torch
+torch.manual_seed(0)
 from pykeen.triples import TriplesFactory
 
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
