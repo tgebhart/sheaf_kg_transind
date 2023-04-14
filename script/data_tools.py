@@ -232,7 +232,7 @@ def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_gr
 
     return r
 
-def split_mapped_triples(triples_factory, train_pct=0.95):
+def split_mapped_triples(triples_factory, train_pct=0.85):
     triples = triples_factory.mapped_triples
     ntrip = triples.size(0)
     perm = torch.randperm(ntrip)

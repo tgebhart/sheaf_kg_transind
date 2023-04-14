@@ -22,7 +22,7 @@ EVALUATE_DEVICE = 'cuda'
 DIFFUSION_ITERATIONS = 5000
 ALPHA = 1e-1
     
-def run(hpo_config_name, dataset, evaluate_device=EVALUATE_DEVICE, 
+def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATE_DEVICE, 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
         alpha=ALPHA, query_structures=QUERY_STRUCTURES):
@@ -105,6 +105,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, 
+    run(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
          alpha=args.alpha, diffusion_iterations=args.diffusion_iterations)
