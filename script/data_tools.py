@@ -255,5 +255,7 @@ def load_hpo_config(hpo_config_name: str) -> dict:
     return config
 
 def get_model_name_from_config(hpo_config_name: str) -> str:
+    if '.json' in hpo_config_name:
+        hpo_config_name = hpo_config_name[:hpo_config_name.find('.json')]
     config = load_hpo_config(hpo_config_name)
-    return config['pipeline']['model'].lower()
+    return config['pipeline']['model'].lower(), hpo_config_name

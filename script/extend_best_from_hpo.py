@@ -29,7 +29,7 @@ def run(hpo_config_name, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_d
         orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
         evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
-    model = get_model_name_from_config(hpo_config_name)
+    model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
     orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{hpo_config_name}/hpo_best'
     eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'

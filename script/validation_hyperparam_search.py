@@ -18,7 +18,7 @@ def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, graph=GRAPH):
     if graph == 'train':
         training_set, testing_set = split_mapped_triples(training_set)
     config = load_hpo_config(hpo_config_name)
-    model = get_model_name_from_config(hpo_config_name)
+    model, hpo_config_name = get_model_name_from_config(hpo_config_name)
     
     config['pipeline']['training'] = training_set
     config['pipeline']['validation'] = testing_set

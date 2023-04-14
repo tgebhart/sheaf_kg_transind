@@ -32,7 +32,7 @@ def train_model(training_set, testing_set, best_hpo_loc, savedir):
 
 def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, graph=GRAPH, eval_graph=EVAL_GRAPH):
 
-    model = get_model_name_from_config(hpo_config_name)
+    model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
     best_hpo_loc = f'data/{dataset}/{dataset_pct}/models/train/{model}/ablation/{hpo_config_name}/best_pipeline/pipeline_config.json'
         

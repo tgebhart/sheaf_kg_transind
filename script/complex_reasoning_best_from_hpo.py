@@ -27,7 +27,7 @@ def run(hpo_config_name, dataset, evaluate_device=EVALUATE_DEVICE,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
         alpha=ALPHA, query_structures=QUERY_STRUCTURES):
     
-    model = get_model_name_from_config(hpo_config_name)
+    model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
     savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
     savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
