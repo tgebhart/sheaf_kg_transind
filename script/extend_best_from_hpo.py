@@ -100,8 +100,8 @@ def run(hpo_config_name, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_d
 
                 norm = torch.linalg.norm(xU)
                 print(norm)
-                if torch.isnan(norm):
-                    print('INTERIOR VERTICES CONTAIN NANs, stopping diffusion')
+                if torch.isnan(norm) or torch.isinf(norm):
+                    print('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
                     break
 
                 orig_result = evaluator.evaluate(
