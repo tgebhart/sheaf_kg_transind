@@ -106,7 +106,11 @@ def run(model, dataset, num_epochs, random_seed,
 
             if iteration % eval_every == 0:
 
-                print(xU.sum())
+                norm = torch.linalg.norm(xU)
+                print(norm)
+                if torch.isnan(norm):
+                    print('INTERIOR VERTICES CONTAIN NANs, stopping diffusion')
+                    break
 
                 orig_result = evaluator.evaluate(
                     batch_size=evaluation_batch_size,

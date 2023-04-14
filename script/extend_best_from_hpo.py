@@ -98,7 +98,11 @@ def run(hpo_config_name, dataset, evaluate_device=EVALUATION_DEVICE, diffusion_d
 
             if iteration in eval_iterations:
 
-                print(xU.sum())
+                norm = torch.linalg.norm(xU)
+                print(norm)
+                if torch.isnan(norm):
+                    print('INTERIOR VERTICES CONTAIN NANs, stopping diffusion')
+                    break
 
                 orig_result = evaluator.evaluate(
                     batch_size=evaluation_batch_size,
