@@ -132,12 +132,14 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                     # break
 
         # save out iteration results
+        print('saving iteration results...')
         res_df = pd.concat(res_df, axis=0, ignore_index=True)
         if not os.path.exists(savedir_results):
             os.makedirs(savedir_results)
         res_df.to_csv(os.path.join(savedir_results, f'metrics_{diffusion_iterations}iterations_{alpha}alpha.csv'), index=False)
 
         # save out extended model
+        print('saving model...')
         if not os.path.exists(savedir_model):
             os.makedirs(savedir_model)
         torch.save(orig_model, os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
