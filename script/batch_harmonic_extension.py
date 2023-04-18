@@ -5,12 +5,13 @@ import numpy as np
 
 def coboundary(edge_index,restriction_maps):
     device = restriction_maps.device
+    dtype = restriction_maps.dtype
     nb = restriction_maps.shape[0]
     ne = edge_index.shape[-1]
     nv = torch.max(edge_index) + 1 #assume there are vertices indexed 0...max
     de = restriction_maps.shape[-2]
     dv = restriction_maps.shape[-1]
-    d = torch.zeros((nb,ne*de,nv*dv), device=device)
+    d = torch.zeros((nb,ne*de,nv*dv), device=device, dtype=dtype)
     for e in range(ne):
         h = edge_index[0,e]
         t = edge_index[1,e]

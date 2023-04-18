@@ -18,11 +18,13 @@ class ComplexExtender(ABC):
     '''Harmonic extension base class.
     '''
     def __init__(self,
-                 model: ERModel) -> None:
+                 model: ERModel,
+                 dtype: torch.Type = torch.float32) -> None:
         self.model = model
         self.num_entities = self._get_num_entities()
         self._check_model_type()
         self.device = self.model.device
+        self.dtype = dtype
 
     def _check_model_type(self):
         raise NotImplementedError
@@ -307,7 +309,7 @@ class SEComplex(ComplexExtender):
                                         h.reshape(nbatch, -1, 1) , t, t.shape[-2])
         return -torch.sum(scores, dim=(-1))
 
-class TransEComplex(ComplexExtender):
+class TransEComplexVerbose(ComplexExtender):
     '''Harmonic extension for TransE model.'''
     def __init__(self,
                  model: ERModel) -> None:
@@ -438,12 +440,80 @@ class TransEComplex(ComplexExtender):
                                         qs['source_vertices'], qs['target_vertices'], 
                                         h.reshape(nbatch, -1, 1), t, b.reshape(nbatch, -1, 1), t.shape[-2])
         return -torch.sum(scores, dim=(-1))
+
+class TransEComplex(ComplexExtender):
+    '''Harmonic extension for TransE model.'''
+    def __init__(self,
+                 model: ERModel) -> None:
+        super().__init__(model=model)
+
+    def _check_model_type(self):
+        assert isinstance(self.model, TransE)
     
+    def _b(self, edge_type:torch.LongTensor) -> Tuple[torch.Tensor]:
+        nu = torch.LongTensor([0])
+        _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
+        return r
+    
+    def score_2p(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_path_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).sum(dim=1).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        return self.model.interaction.score(h=h, r=b, t=t)
+    
+    def score_3p(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_path_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).sum(dim=1).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        return self.model.interaction.score(h=h, r=b, t=t)
+
+    def score_2i(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_intersection_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = (h + b).sum(dim=2)
+
+        return self.model.interaction.score(h=hnew, r=torch.zeros_like(hnew), t=t)
+    
+    def score_3i(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_intersection_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = (h + b).sum(dim=2)
+
+        return self.model.interaction.score(h=hnew, r=torch.zeros_like(hnew), t=t)
+
+    def score_pi(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_pi_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = h.sum(dim=2) + b.sum(dim=2)
+        return self.model.interaction.score(h=hnew, r=torch.zeros_like(hnew), t=t)
+
+    def score_ip(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_pi_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = h.sum(dim=2) + b.sum(dim=2)
+        return self.model.interaction.score(h=hnew, r=torch.zeros_like(hnew), t=t)
+        
 class RotatEComplex(ComplexExtender):
     '''Harmonic extension for RotatE model.'''
     def __init__(self,
                  model: ERModel) -> None:
-        super().__init__(model=model)
+        super().__init__(model=model, dtype=torch.cfloat)
 
     def _check_model_type(self):
         assert isinstance(self.model, RotatE)
@@ -452,6 +522,60 @@ class RotatEComplex(ComplexExtender):
         nu = torch.LongTensor([0])
         _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
         return r
+    
+    def score_2p(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_path_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).prod(dim=1).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        return self.model.interaction.score(h=h, r=b, t=t)
+    
+    def score_3p(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_path_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).prod(dim=1).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        return self.model.interaction.score(h=h, r=b, t=t)
+
+    def score_2i(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_intersection_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = (h * b).sum(dim=2)
+
+        return self.model.interaction.score(h=hnew, r=torch.ones_like(hnew, dtype=self.dtype), t=t)
+    
+    def score_3i(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_intersection_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = (h * b).sum(dim=2)
+
+        return self.model.interaction.score(h=hnew, r=torch.ones_like(hnew, dtype=self.dtype), t=t)
+
+    def score_pi(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_pi_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = h[:,:,0,:] * b[:,:,:2,:].prod(dim=2) + h[:,:,1,:] * b[:,:,2,:]
+        return self.model.interaction.score(h=hnew, r=torch.ones_like(hnew, dtype=self.dtype), t=t)
+
+    def score_ip(self, queries: List[dict], tails: torch.LongTensor) -> torch.FloatTensor:
+        hix, rix = self.unpack_pi_query_indices(queries)
+        h = self._h(hix).unsqueeze(1)
+        b = self._b(rix).unsqueeze(1)
+        t = self._t(tails).unsqueeze(0)
+
+        hnew = (h * b[:,:,:2,:]).sum(dim=2) * b[:,:,2,:]
+        return self.model.interaction.score(h=hnew, r=torch.ones_like(hnew, dtype=self.dtype), t=t)
     
 class TransRComplex(ComplexExtender):
     '''Harmonic extension for TransR model.'''

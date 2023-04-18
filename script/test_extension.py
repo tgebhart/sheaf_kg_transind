@@ -11,10 +11,10 @@ from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transr'
+MODEL = 'rotate'
 NUM_EPOCHS = 25
 C0_DIM = 32
-C1_DIM = 16
+C1_DIM = 32
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
 EVALUATION_BATCH_SIZE = 512
