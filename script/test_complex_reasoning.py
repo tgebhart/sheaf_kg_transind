@@ -81,7 +81,6 @@ def run(model, dataset, num_epochs, random_seed,
             print(result_df.set_index(['Side','Type','Metric']).loc['tail','realistic','hits_at_10'])
             results.append(result_df)
             evaluator.clear()
-            print()
 
     res_df = pd.concat(results, ignore_index=True)
     res_df.to_csv(os.path.join(saveloc, 'complex_extension.csv'), index=False)
