@@ -96,7 +96,7 @@ def objective(orig_config, rdata, model_name, complex_query_targets, trial):
     pipeline_config = config.copy()
     pipeline_config['pipeline'] = {k:v for k,v in pipeline_config['pipeline'].items() if '_ranges' not in k}
 
-    result = pipeline_from_config(config)
+    result = pipeline_from_config(pipeline_config)
     print('training complete...')
 
     model = result.model

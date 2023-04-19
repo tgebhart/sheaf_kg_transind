@@ -11,15 +11,14 @@ EVALUATION_DEVICE = 'cuda'
 DIFFUSION_DEVICE = 'cuda'
 
 CONVERGENCE_TOL = 1e-4
-DIFFUSION_ITERATIONS = 5000
-EVAL_EVERY = 50
+DIFFUSION_ITERATIONS = 10000
+EVAL_EVERY = 100
 ALPHA = 1e-1
 
 from validation_hyperparam_search import run as hpo
 from train_best_from_hpo import run as train
 from extend_best_from_hpo import run as extend
 from complex_reasoning_best_from_hpo import run as reason
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')

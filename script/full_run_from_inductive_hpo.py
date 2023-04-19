@@ -11,15 +11,15 @@ EVALUATION_DEVICE = 'cuda'
 DIFFUSION_DEVICE = 'cuda'
 
 CONVERGENCE_TOL = 1e-4
-DIFFUSION_ITERATIONS = 5000
-EVAL_EVERY = 50
+DIFFUSION_ITERATIONS = 10000
+EVAL_EVERY = 100
 ALPHA = 1e-1
 
 from extension_hyperparameter_search import run as hpo
 from train_best_from_hpo import run as train
 from extend_best_from_hpo import run as extend
 from complex_reasoning_best_from_hpo import run as reason
-
+from data_tools import load_hpo_config
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
@@ -41,8 +41,6 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
-    training_args.add_argument('--alpha', type=float, default=ALPHA,
-                        help='diffusion learning rate (h)')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
     training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
@@ -58,6 +56,9 @@ if __name__ == '__main__':
     
     print(f'{strblock} Training Best {strblock}')
     train(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, graph=args.orig_graph, eval_graph=args.eval_graph)
+
+    config = load_hpo_config(args.hpo_config_name)
+    alpha = config['extension']['alpha']
     
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,

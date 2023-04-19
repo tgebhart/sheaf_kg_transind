@@ -119,7 +119,7 @@ def run(hpo_config_name, dataset_name, version):
     # remove training triples
     best_config['pipeline'] = {k:v for k,v in best_config['pipeline'].items() if k not in ('training','validation','testing')}
     
-    savedir = f'data/{dataset}/{version}/models/train/{model_name}/ablation/{hpo_config_name}/best_pipeline'
+    savedir = f'data/{dataset_name}/{version}/models/train/{model_name}/ablation/{hpo_config_name}/best_pipeline'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     with open(os.path.join(savedir, 'pipeline_config.json'), "w") as outfile:
