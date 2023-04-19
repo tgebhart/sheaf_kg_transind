@@ -44,3 +44,21 @@ def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
 
 def generate_eval_logspace(iterations, num):
     return np.around(np.logspace(0,np.log10(int(iterations)),int(num))).astype(np.uint64)
+
+def suggest_value(trial, value_config, name):
+    value_type = value_config['type']
+    low = value_config['low']
+    high = value_config['high']
+    q = value_config.get('q', 1)
+    scale = value_config.get('scale', 'linear')
+    
+    logscale = True if scale == 'log' else False
+    q = None if logscale else q
+    if value_type == 'float':
+        return trial.suggest_float(name, low, high, step=q, log=logscale)
+    elif value_type == 'int':
+        if scale == 'power_two':
+            return 2**trial.suggest_int(name, low, high, log=False)
+        return trial.suggest_int(name, low, high, log=logscale)
+    else:
+        raise ValueError(f"Unknown value type: {value_type}")

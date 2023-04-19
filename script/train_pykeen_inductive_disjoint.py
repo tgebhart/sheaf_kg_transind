@@ -5,8 +5,7 @@ import pandas as pd
 import torch
 from pykeen.pipeline import pipeline
 from pykeen.evaluation import RankBasedEvaluator
-from pykeen.datasets.inductive import InductiveFB15k237, InductiveWN18RR, InductiveNELL
-from data_tools import split_mapped_triples
+from data_tools import split_mapped_triples, get_disjoint_dataset, get_eval_graph
 from utils import expand_model_to_inductive_graph
 from extension import get_extender, diffuse_interior
 
@@ -24,21 +23,6 @@ DIFFUSION_ITERATIONS = 1000
 EVAL_EVERY = 50
 ALPHA = 1e-1
 
-def get_dataset(dataset, version, create_inverse_triples=False):
-
-    if dataset == 'InductiveFB15k237':
-        return InductiveFB15k237(version=version, create_inverse_triples=create_inverse_triples)
-    if dataset == 'InductiveWN18RR':
-        return InductiveWN18RR(version=version, create_inverse_triples=create_inverse_triples)
-    if dataset == 'InductiveNELL':
-        return InductiveNELL(version=version, create_inverse_triples=create_inverse_triples)
-    
-def get_eval_graph(dataset, eval_graph):
-    if eval_graph == 'valid':
-        return dataset.inductive_validation
-    if eval_graph == 'test':
-        return dataset.inductive_testing
-
 def run(model, dataset_name, version, num_epochs, random_seed,
         embedding_dim, c1_dimension=None, eval_graph=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, alpha=ALPHA, 
@@ -48,7 +32,7 @@ def run(model, dataset_name, version, num_epochs, random_seed,
 
     saveloc = f'data/{dataset_name}/{version}/models/{eval_graph}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
-    dataset = get_dataset(dataset_name, version)
+    dataset = get_disjoint_dataset(dataset_name, version)
     
     model_kwargs = {'embedding_dim': embedding_dim, 'scoring_fct_norm': 2}
     if model == 'rotate':

@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 torch.manual_seed(0)
 from pykeen.triples import TriplesFactory
+from pykeen.datasets.inductive import InductiveFB15k237, InductiveWN18RR, InductiveNELL
 
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
 
@@ -259,3 +260,18 @@ def get_model_name_from_config(hpo_config_name: str) -> str:
         hpo_config_name = hpo_config_name[:hpo_config_name.find('.json')]
     config = load_hpo_config(hpo_config_name)
     return config['pipeline']['model'].lower(), hpo_config_name
+
+def get_disjoint_dataset(dataset, version, create_inverse_triples=False):
+
+    if dataset == 'InductiveFB15k237':
+        return InductiveFB15k237(version=version, create_inverse_triples=create_inverse_triples)
+    if dataset == 'InductiveWN18RR':
+        return InductiveWN18RR(version=version, create_inverse_triples=create_inverse_triples)
+    if dataset == 'InductiveNELL':
+        return InductiveNELL(version=version, create_inverse_triples=create_inverse_triples)
+    
+def get_eval_graph(dataset, eval_graph):
+    if eval_graph == 'valid':
+        return dataset.inductive_validation
+    if eval_graph == 'test':
+        return dataset.inductive_testing
