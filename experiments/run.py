@@ -130,11 +130,12 @@ def run(args):
             ).to(device)
             x = data.x.clone()
             x[~missing_feature_mask] = float("nan")
+            y = data.y.clone()
 
             logger.debug("Starting feature filling")
             start = time.time()
             filled_features = (
-                filling(args.filling_method, data.edge_index, x, missing_feature_mask, args.num_iterations,)
+                filling(args.filling_method, data.edge_index, x, y, missing_feature_mask, args.num_iterations,)
                 if args.model not in ["gcnmf", "pagnn"]
                 else torch.full_like(x, float("nan"))
             )
