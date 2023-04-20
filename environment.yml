@@ -15,3 +15,4 @@ dependencies:
     - pyyaml
     - pykeen 
     - ogb==1.3.2
+    - torch-scatter==2.0.9
