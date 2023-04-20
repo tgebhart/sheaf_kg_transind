@@ -1,4 +1,5 @@
 import argparse
+import json
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
@@ -57,8 +58,10 @@ if __name__ == '__main__':
     print(f'{strblock} Training Best {strblock}')
     train(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, graph=args.orig_graph, eval_graph=args.eval_graph)
 
-    config = load_hpo_config(args.hpo_config_name)
-    alpha = config['extension']['alpha']
+    best_hpo_loc = f'data/{args.dataset}/{args.dataset_pct}/models/train/{args.model}/ablation/{args.hpo_config_name}/best_pipeline/pipeline_config.json'
+    with open(best_hpo_loc, 'r') as f:
+        config = json.load(f)
+        alpha = config['extension']['alpha']
     
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
