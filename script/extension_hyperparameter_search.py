@@ -151,7 +151,7 @@ def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, train_graph=TRAIN_GRA
     study.optimize(obj, n_trials=config['optuna']['n_trials'])
     best_config = study.best_trial.user_attrs['trial_config']
     # remove training triples
-    best_config['pipeline'] = {k:v for k,v in best_config['pipeline'].items() if k not in ('training','validation','testing')}
+    best_config['pipeline'] = {k:v for k,v in best_config['pipeline'].items() if (k not in ('training','validation','testing')) and ('_ranges' not in k)}
     
     savedir = f'data/{dataset}/{dataset_pct}/models/{train_graph}/{model_name}/ablation/{hpo_config_name}/best_pipeline'
     if not os.path.exists(savedir):
