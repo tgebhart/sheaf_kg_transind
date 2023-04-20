@@ -118,10 +118,10 @@ def objective(orig_config, rdata, model_name, complex_query_targets, trial):
         print(f'diffusing for {diffusion_iterations} iterations with alpha {alpha}...')
         for dit in tqdm(range(diffusion_iterations), desc='diffusion'):
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
-
             norm = torch.linalg.norm(xU)    
             if torch.isnan(norm).any() or torch.isinf(norm).any():
-                raise ValueError('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
+                print('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
+                return 0
 
         print('evaluating complex query performance...')
         evaluation_metric = evaluate_complex(extender.model, model_name, rdata, query_structures=complex_query_targets)

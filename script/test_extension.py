@@ -11,7 +11,7 @@ from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'rotate'
+MODEL = 'se'
 NUM_EPOCHS = 25
 C0_DIM = 32
 C1_DIM = 32

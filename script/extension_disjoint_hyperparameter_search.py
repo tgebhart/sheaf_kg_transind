@@ -92,7 +92,8 @@ def objective(orig_config, dataset, model_name, trial):
             xU = diffuse_interior(extender, inference_graph.mapped_triples, interior_mask)
             norm = torch.linalg.norm(xU)    
             if torch.isnan(norm).any() or torch.isinf(norm).any():
-                raise ValueError('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
+                print('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
+                return 0
                 
         print('evaluating complex query performance...')
         

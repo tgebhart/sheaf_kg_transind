@@ -108,6 +108,7 @@ class SEExtender(KGExtender):
             _, edge_index = torch.unique(edge_index, sorted=True, return_inverse=True)
         if nv is None:
             nv = edge_index.max() + 1
+
         dx = Fh @ xh.unsqueeze(-1) - Ft @ xt.unsqueeze(-1)
         x_e_h = Fh.permute(0,-1,-2) @ dx
         x_e_t = Ft.permute(0,-1,-2) @ dx
@@ -117,8 +118,7 @@ class SEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            # degrees = xh.shape[1]*(degree(edge_index[0,:]) + degree(edge_index[1,:]))
-            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
+            degrees = xh.shape[1]*degree(edge_index.flatten())
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -178,7 +178,7 @@ class TransEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
+            degrees = xh.shape[1]*degree(edge_index.flatten())
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -223,7 +223,7 @@ class RotatEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
+            degrees = xh.shape[1]*degree(edge_index.flatten())
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
@@ -276,7 +276,7 @@ class TransRExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*(degree(edge_index.flatten())/2)
+            degrees = xh.shape[1]*degree(edge_index.flatten())
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx
