@@ -63,9 +63,9 @@ if __name__ == '__main__':
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-        alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
+        alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
     
     print(f'{strblock} Complex Queries Best {strblock}')
     reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations)
+         alpha=alpha, diffusion_iterations=args.diffusion_iterations)
