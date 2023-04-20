@@ -19,7 +19,7 @@ ALPHA = 1e-1
 from extension_disjoint_hyperparameter_search import run as hpo
 from train_best_from_hpo_disjoint import run as train
 from extend_best_from_hpo_disjoint import run as extend
-from data_tools import load_hpo_config
+from data_tools import load_hpo_config, get_model_name_from_config
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
@@ -57,7 +57,8 @@ if __name__ == '__main__':
     print(f'{strblock} Training Best {strblock}')
     train(args.hpo_config_name, args.dataset, args.version, train_graph=args.orig_graph, eval_graph=args.eval_graph)
 
-    best_hpo_loc = f'data/{args.dataset}/{args.version}/models/train/{args.model}/ablation/{args.hpo_config_name}/best_pipeline/pipeline_config.json'
+    model_name, hpo_config_name = get_model_name_from_config(args.hpo_config_name)
+    best_hpo_loc = f'data/{args.dataset}/{args.version}/models/train/{model_name}/ablation/{args.hpo_config_name}/best_pipeline/pipeline_config.json'
     with open(best_hpo_loc, 'r') as f:
         config = json.load(f)
         alpha = config['extension']['alpha']
