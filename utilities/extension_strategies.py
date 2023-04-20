@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 from torch_geometric.typing import Adj, OptTensor
 
-from utilities.laplacian import normalized_graph_laplacian, normalized_sheaf_laplacian, learn_sheaf
+from utilities.laplacian import normalized_adjacency, sheaf_diffusion_iter
 
 
 class FeaturePropagation(torch.nn.Module):
@@ -11,7 +11,7 @@ class FeaturePropagation(torch.nn.Module):
         super(FeaturePropagation, self).__init__()
         self.num_iterations = num_iterations
 
-    def propagate(self, x: Tensor, edge_index: Adj, mask: Tensor, sheaf = None) -> Tensor:
+    def propagate(self, x: Tensor, mask: Tensor, propagation_mat) -> Tensor:
         # out is inizialized to 0 for missing values. However, its initialization does not matter for the final
         # value at convergence
         out = x
@@ -19,25 +19,13 @@ class FeaturePropagation(torch.nn.Module):
             out = torch.zeros_like(x)
             out[mask] = x[mask]
 
-        n_nodes = x.shape[0]
-        adj = self.get_propagation_matrix(out, edge_index, n_nodes, sheaf)
         for _ in range(self.num_iterations):
             # Diffuse current features
-            out = torch.sparse.mm(adj, out)
+            out = torch.sparse.mm(propagation_mat, out)
             # Reset original known features
             out[mask] = x[mask]
 
         return out
-
-    def get_propagation_matrix(self, x, edge_index, n_nodes, sheaf = None):
-        # Initialize all edge weights to ones if the graph is unweighted)
-        if sheaf == None:
-            edge_index, edge_weight = normalized_graph_laplacian(edge_index, n_nodes=n_nodes)
-        else:
-            edge_index, edge_weight = normalized_sheaf_laplacian(edge_index, n_nodes=n_nodes, sheaf=sheaf)
-        adj = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
-
-        return adj
 
 def random_filling(X):
     return torch.randn_like(X)
@@ -64,13 +52,23 @@ def neighborhood_mean_filling(edge_index, X, feature_mask):
     return mean_neighborhood_features
 
 
-def sheaf_propagation(edge_index, X, feature_mask, num_iterations, sheaf = None):
+def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : bool):
+    """
+    If sheaf is False, then the extension will be done with respect to the graph laplacian. Otherwise, we need to train a sheaf laplacian and then use that.
+    """
     propagation_model = FeaturePropagation(num_iterations=num_iterations)
 
-    return propagation_model.propagate(x=X, edge_index=edge_index, mask=feature_mask, sheaf = sheaf)
+    n_nodes = X.shape[0]
+    if sheaf == False:
+        edge_index, edge_weight = normalized_adjacency(edge_index, n_nodes=n_nodes)
+    else:
+        edge_index, edge_weight = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes)
+    propagation_mat = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
+    
+    return propagation_model.propagate(x=X, mask=feature_mask, propagation_mat=propagation_mat)
 
 
-def filling(filling_method, edge_index, X, feature_mask, num_iterations=None):
+def filling(filling_method, edge_index, X, Y, feature_mask, num_iterations=None):
     if filling_method == "random":
         X_reconstructed = random_filling(X)
     elif filling_method == "zero":
@@ -80,9 +78,9 @@ def filling(filling_method, edge_index, X, feature_mask, num_iterations=None):
     elif filling_method == "neighborhood_mean":
         X_reconstructed = neighborhood_mean_filling(edge_index, X, feature_mask)
     elif filling_method == "sheaf_propagation":
-        X_reconstructed = sheaf_propagation(edge_index, X, feature_mask, num_iterations, sheaf = learn_sheaf(edge_index, X, feature_mask))
+        X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = True)
     elif filling_method == "constant_extension":
-        X_reconstructed = sheaf_propagation(edge_index, X, feature_mask, num_iterations, sheaf = None)
+        X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = False)
     else:
         raise ValueError(f"{filling_method} method not implemented")
     return X_reconstructed
