@@ -3,6 +3,7 @@ from distutils.util import strtobool
 import argparse
 
 def str2bool(x):
+    # Not used currently. Can be used to turn the string 'True' into True
     if type(x) == bool:
         return x
     elif type(x) == str:
@@ -11,7 +12,6 @@ def str2bool(x):
         raise ValueError(f'Unrecognised type {type(x)}')
     
 def get_parser():
-    parser = argparse.ArgumentParser("harmonic-extension")
     parser = argparse.ArgumentParser("harmonic-extension")
     parser.add_argument(
         "--dataset_name",
