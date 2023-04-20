@@ -79,7 +79,7 @@
           "low": 1e-3,
           "high": 1,
           "scale": "linear",
-          "q": 1e-1
+          "q": 5e-3
         },
         "diffusion_iterations": {
           "type": "int",
