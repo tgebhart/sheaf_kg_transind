@@ -38,7 +38,7 @@ if __name__ == '__main__':
     training_args.add_argument('--orig-graph', type=str, required=False, default=ORIG_GRAPH,
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
-                        help='inductive graph to train on')
+                        help='inductive graph to test on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
