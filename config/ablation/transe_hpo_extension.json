@@ -1,7 +1,7 @@
 {
     "type": "hpo",
     "metadata": {
-      "title": "HPO Over FB15K-237 for TransR"
+      "title": "HPO Over FB15K-237 for TransE"
     },
     "pipeline": {
       "stopper": "early",
@@ -10,7 +10,7 @@
         "patience": 2,
         "relative_delta": 0.002
       },
-      "model": "TransR",
+      "model": "TransE",
       "model_kwargs": {
         "scoring_fct_norm": 2
       },
@@ -18,25 +18,12 @@
         "embedding_dim": {
           "type": "int",
           "low": 4,
-          "high": 7,
-          "scale": "power_two"
-        },
-        "relation_dim": {
-          "type": "int",
-          "low": 5,
-          "high": 7,
+          "high": 9,
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
-      "loss_kwargs_ranges": {
-        "margin": {
-          "type": "float",
-          "low": 1.0, 
-          "high": 3.0,
-          "scale": "linear"
-        }
-      },
+      "loss": "CrossEntropyloss",
+      "regularizer": "NoRegularizer",
       "optimizer": "adam",
       "optimizer_kwargs": {
         "weight_decay": 0.0
@@ -49,32 +36,47 @@
           "scale": "log"
         }
       },
-      "training_loop": "slcwa",
-      "negative_sampler": "BasicNegativeSampler",
-      "negative_sampler_kwargs_ranges": {
-        "num_negs_per_pos": {
-          "type": "int",
-          "low": 1,
-          "high": 100,
-          "q": 1
-        }
-      },
+      "training_loop": "lcwa",
       "training_kwargs": {
-        "num_epochs": 500,
-        "label_smoothing": 0.0
+        "num_epochs": 500
+      },
+      "training_kwargs_ranges": {
+        "label_smoothing": {
+          "type": "float",
+          "low": 0.001,
+          "high": 1.0,
+          "scale": "log"
+        }
       },
       "evaluator": "RankBasedEvaluator",
       "evaluator_kwargs": {
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": null
+        "batch_size": 64
+      }
+    },
+    "extension": {
+      "diffusion_ranges": {
+        "alpha": {
+          "type": "float",
+          "low": 1e-3,
+          "high": 1,
+          "scale": "linear",
+          "q": 0.111
+        },
+        "diffusion_iterations": {
+          "type": "int",
+          "low": 100,
+          "high": 10000,
+          "scale": "log"
+        }
       }
     },
     "optuna": {
-      "n_trials": 20,
+      "n_trials": 30,
       "metric": "hits@10",
       "direction": "maximize",
       "sampler": "random"
     }
-  }
+}

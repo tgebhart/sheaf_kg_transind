@@ -1,7 +1,7 @@
 {
     "type": "hpo",
     "metadata": {
-      "title": "HPO Over FB15K-237 for TransR"
+      "title": "HPO Over fb15k237 for RotatE"
     },
     "pipeline": {
       "stopper": "early",
@@ -10,21 +10,12 @@
         "patience": 2,
         "relative_delta": 0.002
       },
-      "model": "TransR",
-      "model_kwargs": {
-        "scoring_fct_norm": 2
-      },
+      "model": "RotatE",
       "model_kwargs_ranges": {
         "embedding_dim": {
           "type": "int",
           "low": 4,
-          "high": 7,
-          "scale": "power_two"
-        },
-        "relation_dim": {
-          "type": "int",
-          "low": 5,
-          "high": 7,
+          "high": 9,
           "scale": "power_two"
         }
       },
@@ -37,6 +28,7 @@
           "scale": "linear"
         }
       },
+      "regularizer": "NoRegularizer",
       "optimizer": "adam",
       "optimizer_kwargs": {
         "weight_decay": 0.0
@@ -61,6 +53,7 @@
       },
       "training_kwargs": {
         "num_epochs": 500,
+        "batch_size": 1024,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -68,11 +61,28 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": null
+        "batch_size": 64
+      }
+    },
+    "extension": {
+      "diffusion_ranges": {
+        "alpha": {
+          "type": "float",
+          "low": 1e-3,
+          "high": 1,
+          "scale": "linear",
+          "q": 0.111
+        },
+        "diffusion_iterations": {
+          "type": "int",
+          "low": 100,
+          "high": 10000,
+          "scale": "log"
+        }
       }
     },
     "optuna": {
-      "n_trials": 20,
+      "n_trials": 30,
       "metric": "hits@10",
       "direction": "maximize",
       "sampler": "random"

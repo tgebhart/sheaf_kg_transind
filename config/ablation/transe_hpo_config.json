@@ -17,7 +17,7 @@
       "model_kwargs_ranges": {
         "embedding_dim": {
           "type": "int",
-          "low": 5,
+          "low": 4,
           "high": 9,
           "scale": "power_two"
         }
@@ -57,7 +57,7 @@
       }
     },
     "optuna": {
-      "n_trials": 25,
+      "n_trials": 100,
       "metric": "hits@10",
       "direction": "maximize",
       "sampler": "random"

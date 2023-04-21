@@ -1,7 +1,7 @@
 {
     "type": "hpo",
     "metadata": {
-      "title": "HPO Over fb15k237 for RotatEPhase"
+      "title": "HPO Over fb15k237 for RotatE"
     },
     "pipeline": {
       "stopper": "early",
@@ -14,7 +14,7 @@
       "model_kwargs_ranges": {
         "embedding_dim": {
           "type": "int",
-          "low": 5,
+          "low": 4,
           "high": 9,
           "scale": "power_two"
         }
@@ -65,7 +65,7 @@
       }
     },
     "optuna": {
-      "n_trials": 25,
+      "n_trials": 50,
       "metric": "hits@10",
       "direction": "maximize",
       "sampler": "random"

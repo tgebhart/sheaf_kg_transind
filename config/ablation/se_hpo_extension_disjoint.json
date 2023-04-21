@@ -18,7 +18,7 @@
         "embedding_dim": {
           "type": "int",
           "low": 2,
-          "high": 5,
+          "high": 8,
           "scale": "power_two"
         }
       },
@@ -60,8 +60,8 @@
         }
       },
       "training_kwargs": {
-        "num_epochs": 250,
-        "batch_size": null,
+        "num_epochs": 500,
+        "batch_size": 1024,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -79,7 +79,7 @@
           "low": 1e-3,
           "high": 1,
           "scale": "linear",
-          "q": 5e-3
+          "q": 0.111
         },
         "diffusion_iterations": {
           "type": "int",
@@ -90,7 +90,7 @@
       }
     },
     "optuna": {
-      "n_trials": 100,
+      "n_trials": 200,
       "metric": "hits@10",
       "direction": "maximize",
       "sampler": "random"
