@@ -5,4 +5,5 @@ python -m experiments.run \
     --model sage\
     --filling_method sheaf_propagation\
     --missing_rate 0.99\
-    --homophily 0.1
+    --homophily 0.1\
+    --n_runs 2
