@@ -168,7 +168,7 @@ def learn_sheaf_laplacian(X, Y, edge_index):
 
     n_nodes, stalk_dim = X.shape
     sheaf = KnowledgeSheaf(n_nodes, edge_index, Y, stalk_dim = stalk_dim, verbose = True)
-    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 5, lr = 0.1)
+    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 1, lr = 0.1)
     edge_index, Delta = sheaf.normalized_laplacian()
 
     return edge_index, Delta
