@@ -17,7 +17,6 @@ from utilities.seeds import seeds
 from utilities.extension_strategies import filling
 from experiments.evaluation import test
 
-
 def train(model, x, data, optimizer, critereon, train_loader=None, device="cuda"):
     model.train()
 
@@ -129,7 +128,7 @@ def run(args):
                 rate=args.missing_rate, n_nodes=n_nodes, n_features=n_features, type=args.mask_type,
             ).to(device)
             x = data.x.clone()
-            x[~missing_feature_mask] = float("nan")
+           # x[~missing_feature_mask] = float("nan") This makes absolutely sure that I don't use the hidden of values of x to extend! However, we make sure to apply the mask at every opportunity OTHER than to compute the laplacian. I should implement a way to make sure that works with missing values also.....
             y = data.y.clone()
 
             logger.debug("Starting feature filling")
@@ -140,6 +139,8 @@ def run(args):
                 else torch.full_like(x, float("nan"))
             )
             logger.debug(f"Feature filling completed. It took: {time.time() - start:.2f}s")
+
+            x[~missing_feature_mask] = float("nan") #I moved it down here!
 
             model = get_model(
                 model_name=args.model,
