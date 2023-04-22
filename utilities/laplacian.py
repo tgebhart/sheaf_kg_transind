@@ -4,6 +4,8 @@ import torch_geometric.utils
 
 from utilities.learn_sheaf import learn_sheaf_laplacian
 
+from torch_scatter import scatter
+
 
 def normalized_adjacency(edge_index, n_nodes):
     """
@@ -13,7 +15,7 @@ def normalized_adjacency(edge_index, n_nodes):
     """
     edge_weight = torch.ones((edge_index.size(1),), device=edge_index.device)
     row, col = edge_index[0], edge_index[1]
-    deg = torch.scatter(edge_weight, col, dim=0, dim_size=n_nodes)
+    deg = scatter(edge_weight, col, dim=0, dim_size=n_nodes)
     deg_inv_sqrt = deg.pow_(-0.5)
     deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float("inf"), 0)
     DAD = deg_inv_sqrt[row] * edge_weight * deg_inv_sqrt[col]
@@ -44,8 +46,8 @@ def sheaf_diffusion_iter(X, Y, edge_index, n_nodes):
     representing a Laplacian so that really efficient computations can be done with it.
     """
     
-    L = learn_sheaf_laplacian(X, Y, edge_index)
-    print('found sheaf laplacian!')
-    #TODO: Finish this by computing I - \Slap.
+    edge_index, sheaf_prop_mat = learn_sheaf_laplacian(X, Y, edge_index)
 
-    return edge_index #and edge_weights!
+    #Currently, I'm not computing I-\Slap, because the identity should be subtracted from the diagonal blocks, and I don't have these encoded... (there are no self loops). I'm not sure whats going to happen.
+
+    return edge_index, sheaf_prop_mat
