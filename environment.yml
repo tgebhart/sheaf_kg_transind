@@ -1,12 +1,13 @@
 name: harmonic_extension
 channels:
-  - conda-forge
   - pytorch
+  - conda-forge
   - pyg
 dependencies:
   - pip=21.3.1
   - python=3.9.9
   - pytorch=2.0.0
+  - cudatoolkit=11.3
   - pip: 
     - pyg
     - torch-geometric
