@@ -69,12 +69,20 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
     else:
         edge_index, edge_blocks = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes)
 
-        #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this.
+        #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this..
 
         n_edges = edge_index.shape[1]
         crow_indices = torch.tensor(csr_array((torch.ones(n_edges), (edge_index[0], edge_index[1])), shape = (n_nodes, n_nodes)).indptr) #This is a hacky way to create the compressed row index format....
         col_indices = edge_index[1]
-        propagation_mat = torch.sparse_bsr_tensor(crow_indices, col_indices, edge_blocks, size = (n_nodes, n_nodes), device = edge_index.device)
+        propagation_mat = torch.sparse_bsr_tensor(crow_indices, col_indices, edge_blocks, size = (n_nodes*2, n_nodes*2), device = edge_index.device)
+
+        #Oh yeah, and I forgot to implement I-Delta in the previous step.
+
+        propagation_mat = torch.sparse.addmm(input=torch.eye(n_nodes*2), mat1 = propagation_mat, mat2 = torch.eye(n_nodes*2), alpha=-1)
+
+        X = X.reshape((-1,1)) # Change a [n_nodes, num_features] to [n_nodes*n_features,1] so I can multiply it by propagation_mat
+        #I'll fix the shape later.
+        feature_mask = feature_mask.reshape((-1,1))
         
         #My idea to change this from sparse_bsr_tensor is to use the scipy.sparse library to create a sparse block matrix and then convert over to the pytorch sparse_csr format. Maybe this is better supported?
 
@@ -92,6 +100,7 @@ def filling(filling_method, edge_index, X, Y, feature_mask, num_iterations=None)
         X_reconstructed = neighborhood_mean_filling(edge_index, X, feature_mask)
     elif filling_method == "sheaf_propagation":
         X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = True)
+        X_reconstructed = X_reconstructed.reshape(X.shape)
     elif filling_method == "constant_propagation":
         X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = False)
     else:
