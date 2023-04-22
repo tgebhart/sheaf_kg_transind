@@ -20,7 +20,7 @@ HPO_CONFIG_NAME = 'se_hpo_extension'
 DATASET_PCT = 175
 TRAIN_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-COMPLEX_QUERY_TARGETS = ['1p', 'pi']
+COMPLEX_QUERY_TARGETS = ['1p', '3p', '3i', 'pi']
     
 def evaluate_complex(model, model_name, rdata, query_structures=COMPLEX_QUERY_TARGETS, evaluation_batch_size=5):
     extender = get_complex_extender(model_name)(model=model)
