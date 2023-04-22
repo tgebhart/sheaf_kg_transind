@@ -3,6 +3,9 @@ import torch
 from torch import Tensor
 from torch_geometric.typing import Adj, OptTensor
 
+from scipy.sparse import bsr_matrix, csr_array
+import numpy as np
+
 from utilities.laplacian import normalized_adjacency, sheaf_diffusion_iter
 
 
@@ -58,13 +61,23 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
     """
     propagation_model = FeaturePropagation(num_iterations=num_iterations)
 
-    n_nodes = X.shape[0]
+    n_nodes, stalk_dim = X.shape
     if sheaf == False:
         edge_index, edge_weight = normalized_adjacency(edge_index, n_nodes=n_nodes)
+
+        propagation_mat = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
     else:
-        edge_index, edge_weight = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes)
-    propagation_mat = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
-    
+        edge_index, edge_blocks = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes)
+
+        #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this.
+
+        n_edges = edge_index.shape[1]
+        crow_indices = torch.tensor(csr_array((torch.ones(n_edges), (edge_index[0], edge_index[1])), shape = (n_nodes, n_nodes)).indptr) #This is a hacky way to create the compressed row index format....
+        col_indices = edge_index[1]
+        propagation_mat = torch.sparse_bsr_tensor(crow_indices, col_indices, edge_blocks, size = (n_nodes, n_nodes), device = edge_index.device)
+        
+        #My idea to change this from sparse_bsr_tensor is to use the scipy.sparse library to create a sparse block matrix and then convert over to the pytorch sparse_csr format. Maybe this is better supported?
+
     return propagation_model.propagate(x=X, mask=feature_mask, propagation_mat=propagation_mat)
 
 
@@ -79,7 +92,7 @@ def filling(filling_method, edge_index, X, Y, feature_mask, num_iterations=None)
         X_reconstructed = neighborhood_mean_filling(edge_index, X, feature_mask)
     elif filling_method == "sheaf_propagation":
         X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = True)
-    elif filling_method == "constant_extension":
+    elif filling_method == "constant_propagation":
         X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = False)
     else:
         raise ValueError(f"{filling_method} method not implemented")
