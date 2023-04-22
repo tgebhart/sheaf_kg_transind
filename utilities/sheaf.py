@@ -1,5 +1,7 @@
 import torch
 
+from torch_scatter import scatter
+
 # This is a copy of the file Tom sent me. So far, I'm referencing it, but not using it.
 
 # How should initialization work? Ideally, we would want whatever oprerator is applied to have operator norm close to 1. The norm of the Laplacian is at most the square of the norm of the coboundary. 
