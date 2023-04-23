@@ -6,4 +6,4 @@ python -m experiments.run \
     --filling_method sheaf_propagation\
     --missing_rate 0.99\
     --homophily 0.1\
-    --n_runs 2
+    --n_runs 1
