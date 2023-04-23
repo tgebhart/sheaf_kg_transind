@@ -94,7 +94,7 @@ class KnowledgeSheaf(torch.nn.Module):
         entity_reps: This is a [n_nodes, feature_dim] tensor that assigns each node to its feature vector
         """
 
-        return self.sheaf_dirichlet_energy(entity_reps) + 1/torch.sum(torch.norm(self.restriction_maps).pow(2))
+        return self.sheaf_dirichlet_energy(entity_reps) + torch.sum((1/torch.linalg.matrix_norm(self.restriction_maps)).pow(2))
 
     def train_maps(self, entity_reps, epochs = 1, lr = 0.1):
         """
@@ -119,7 +119,7 @@ class KnowledgeSheaf(torch.nn.Module):
             loss.backward()
             optimizer.step()
             if self.verbose:
-                print('Epoch {}/{}, sde: {}'.format(epoch+1,epochs, loss))
+                print('Epoch {}/{}, loss: {}'.format(epoch+1,epochs, loss))
 
     def normalized_laplacian(self, restriction_maps = None):
         """
@@ -168,7 +168,7 @@ def learn_sheaf_laplacian(X, Y, edge_index):
 
     n_nodes, stalk_dim = X.shape
     sheaf = KnowledgeSheaf(n_nodes, edge_index, Y, stalk_dim = stalk_dim, verbose = True)
-    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 1, lr = 0.1)
+    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 5, lr = 0.1)
     edge_index, Delta = sheaf.normalized_laplacian()
 
     return edge_index, Delta
