@@ -69,7 +69,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 64
+        "batch_size": 16
       }
     },
     "extension": {
