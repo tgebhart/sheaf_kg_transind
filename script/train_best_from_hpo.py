@@ -19,7 +19,7 @@ def train_model(training_set, testing_set, best_hpo_loc, savedir):
     config['pipeline']['validation'] = testing_set
     config['pipeline']['testing'] = testing_set
 
-    result = pipeline_from_config(config)
+    result = pipeline_from_config(config)    
 
     mr = result.metric_results.to_df()
     print(mr[mr['Metric'] == 'hits_at_10'])

@@ -55,7 +55,7 @@
         "num_negs_per_pos": {
           "type": "int",
           "low": 1,
-          "high": 50,
+          "high": 45,
           "q": 1
         }
       },
