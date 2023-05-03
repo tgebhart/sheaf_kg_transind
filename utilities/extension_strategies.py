@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 from torch_geometric.typing import Adj, OptTensor
 
-from scipy.sparse import bsr_matrix, csr_array
+from scipy.sparse import csr_array
 import numpy as np
 
 from utilities.laplacian import normalized_adjacency, sheaf_diffusion_iter
@@ -67,7 +67,7 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
 
         propagation_mat = torch.sparse.FloatTensor(edge_index, values=edge_weight, size=(n_nodes, n_nodes)).to(edge_index.device)
     else:
-        edge_index, edge_blocks = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes)
+        edge_index, edge_blocks = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes) #First edge labels are 2-->6
 
         #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this..
 
