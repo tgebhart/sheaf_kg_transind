@@ -48,6 +48,4 @@ def sheaf_diffusion_iter(X, Y, edge_index, n_nodes):
     
     edge_index, sheaf_prop_mat = learn_sheaf_laplacian(X, Y, edge_index)
 
-    #Currently, I'm not computing I-\Slap, because the identity should be subtracted from the diagonal blocks, and I don't have these encoded... (there are no self loops). I'm not sure whats going to happen.
-
     return edge_index, sheaf_prop_mat
