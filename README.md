@@ -36,7 +36,7 @@ conda env update --file environment.yml --prune
 
 Homophilic feature propagation
 ```bash
-sh ./experiments/scripts/heterophilic_fp.sh
+sh ./experiments/scripts/heterophilic_sheafp.sh
 ```
 
 You might have a way to do hyperparameter sweeps, but I'm impressed by the implementation [here](https://github.com/twitter-research/neural-sheaf-diffusion). They use this thing called wandb that just needs a config 
