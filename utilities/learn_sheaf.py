@@ -55,36 +55,36 @@ class KnowledgeSheaf(torch.nn.Module):
         This method computes the sheaf Dirichlet energy of the current sheaf. Minimizing this with respect to a fixed set of entity representations will find a good sheaf, and minimizing this with respect to a good sheaf will find a good set of entity representations.
         """
 
-        # This goes ahead and computes the rescaled inputs D_v^{-1/2}*x_v ahead of time for all x_v.
-        normalized_entity_reps =  torch.matmul(entity_reps, torch.diag(self.inv_node_degs))
+        # This goes ahead and computes the rescaled inputs D_v^{-1/2}*x_v ahead of time for all x_v. 
+        normalized_entity_reps = torch.matmul(entity_reps, torch.diag(self.inv_node_degs))
 
         # This is the same as edge_index, but with the entity types instead of the node indices. This helps me map the restriction maps to the nodes in the next step.
         labeled_edge_index = torch.cat((self.entity_types[self.edge_index[0,:]],self.entity_types[self.edge_index[1,:]]),dim=0).reshape(2,-1)
 
         # What I want to do is to use scatter as much as I can. What I expect in large graphs is that there are much less edge types (unique relationships between different node_types) than there are edges overall. I want to compute all of the same edge_types at the same time using scatter. 
 
-        # If edge_index is of size [2, num_edges], then the following tensors are [n_edges, stalk_dim, stalk_dim], storing the restriction map for the head nodes and tail nodes for each edge in edge_index.
+        # If edge_index is of size [2, num_edges], then the following tensors are [n_edges, stalk_dim, stalk_dim], storing the restriction map for the head nodes and tail nodes for each edge in edge_index. self.restriction_maps[1,2] = R_{1-->2}
         head_maps = self.restriction_maps[labeled_edge_index[0],labeled_edge_index[1]].reshape(-1,self.stalk_dim,self.stalk_dim)
         tail_maps = self.restriction_maps[labeled_edge_index[1], labeled_edge_index[0]].reshape(-1,self.stalk_dim,self.stalk_dim)
+        
+        normalized_head_entities = normalized_entity_reps[:,self.edge_index[0,:]]
+        normalized_tail_entities = normalized_entity_reps[:,self.edge_index[1,:]]
 
-        # This uses the restriction maps we computed before to embed all the entity representations. There HAS to be a faster way to do this, utilizing the broadcasting from pytorch. Currently, this loop happens like 64,000 times for MixHop.
-        head_embeddings = torch.zeros(self.stalk_dim,self.n_edges)
-        tail_embeddings = torch.zeros(self.stalk_dim,self.n_edges)
-        for i in range(self.n_edges):
-            head_embeddings[:, i] = head_maps[i,:,:] @ normalized_entity_reps[:,self.edge_index[0,i]]
-            tail_embeddings[:, i] = tail_maps[i,:,:] @ normalized_entity_reps[:,self.edge_index[1,i]]
+        head_embeddings = torch.einsum("nbh,bn->hn", (head_maps,normalized_head_entities))
+        tail_embeddings = torch.einsum("nbh,bn->hn", (tail_maps, normalized_tail_entities))
 
         # Now, we can use scatter to take all these comparisons at once.
+        # Revelation: The following is ALWAYS computing sheaf energy = 0! I think this was conceptually wrong to do...? I think what is wrong here is that I'm collecting all the head embeddings and tail embeddings into a SINGLE edge space for each node, and then computing a difference here. I should not do this.
 
-        comparison_vec = torch.zeros(self.stalk_dim,self.n_nodes)
+        #comparison_vec = torch.zeros(self.stalk_dim,self.n_nodes)
 
-        scatter(head_embeddings, index = self.edge_index[0,:] ,dim=1, out = comparison_vec)
-        scatter(-tail_embeddings, self.edge_index[1,:], dim=1, out=comparison_vec)
+        #scatter(head_embeddings, index = self.edge_index[0,:] ,dim=1, out=comparison_vec)
+        #scatter(-tail_embeddings, self.edge_index[1,:], dim=1, out=comparison_vec) 
 
-        if self.verbose:
-            print('Computed the sheaf dirichlet energy...')
+        #if self.verbose:
+        #    print('Computed the sheaf dirichlet energy...')
         
-        return torch.sum(torch.norm(comparison_vec, dim=1).pow(2))
+        return torch.sum(torch.norm(head_embeddings - tail_embeddings, dim=0).pow(2))
 
 
     def loss(self, entity_reps):
@@ -94,7 +94,18 @@ class KnowledgeSheaf(torch.nn.Module):
         entity_reps: This is a [n_nodes, feature_dim] tensor that assigns each node to its feature vector
         """
 
-        return self.sheaf_dirichlet_energy(entity_reps) + torch.sum((1/torch.linalg.matrix_norm(self.restriction_maps)).pow(2))
+        sheaf_energy = self.sheaf_dirichlet_energy(entity_reps)
+
+        penalty = torch.sum((1/torch.linalg.matrix_norm(self.restriction_maps)).pow(2))
+
+        loss = sheaf_energy + penalty
+
+        return loss, sheaf_energy, penalty
+        
+        # TODO: Check the following:
+        # Switch to "clamping". M --> lambda*M. norm( lambda M ) = lambda*norm(M)
+        # Make them orthonormal the whole time.
+        # Run the constant sheaf, recover their results.
 
     def train_maps(self, entity_reps, epochs = 1, lr = 0.1):
         """
@@ -113,13 +124,18 @@ class KnowledgeSheaf(torch.nn.Module):
         optimizer = Adam(self.parameters(), lr = lr)
 
         for epoch in range(epochs):
-            loss = self.loss(entity_reps)
+            loss, sheaf_energy, penalty = self.loss(entity_reps)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+           # test_laplacian = self.restriction_maps[6,2].transpose(0,1) @ self.restriction_maps[2,6]
+
+           # print("laplacian for first map: {}".format(test_laplacian))
+            #print("laplacian matrix norm for first map: {}".format(torch.linalg.matrix_norm(test_laplacian)))
             if self.verbose:
-                print('Epoch {}/{}, loss: {}'.format(epoch+1,epochs, loss))
+                print('Epoch {}/{}, sheaf energy: {}, trivial penalty: {}'.format(epoch+1, epochs, sheaf_energy, penalty))
 
     def normalized_laplacian(self, restriction_maps = None):
         """
@@ -138,13 +154,20 @@ class KnowledgeSheaf(torch.nn.Module):
         # If edge_index is of size [2, num_edges], then the following tensors are [stalk_dim, stalk_dim, num_edges], storing the restriction map for the head nodes and tail nodes for each edge in edge_index.
         head_maps = self.restriction_maps[labeled_edge_index[0],labeled_edge_index[1]].reshape(-1,self.stalk_dim,self.stalk_dim)
         tail_maps = self.restriction_maps[labeled_edge_index[1], labeled_edge_index[0]].reshape(-1,self.stalk_dim,self.stalk_dim)
-        
-        normalized_laplacian = torch.zeros(self.n_edges, self.stalk_dim, self.stalk_dim)
-        for i in range(self.n_edges):
-            normalize_head = torch.diag(torch.ones(self.stalk_dim)*self.inv_node_degs[self.edge_index[0,i]]) 
-            normalize_tail = torch.diag(torch.ones(self.stalk_dim)*self.inv_node_degs[self.edge_index[1,i]])
-            normalized_laplacian[i,:,:] = normalize_tail @ tail_maps[i,:,:].transpose(0,1) @ head_maps[i,:,:] @ normalize_head
+
+        normalized_laplacian = torch.einsum("nbh,nhk->nbk", (tail_maps.transpose(1,2), head_maps))
+
+        #normalized_laplacian = torch.zeros(self.n_edges, self.stalk_dim, self.stalk_dim)
+        #for i in range(self.n_edges):
+            #normalize_head = torch.diag(torch.ones(self.stalk_dim)*self.inv_node_degs[self.edge_index[0,i]]) 
+            #normalize_tail = torch.diag(torch.ones(self.stalk_dim)*self.inv_node_degs[self.edge_index[1,i]])
+            #normalized_laplacian[i,:,:] = normalize_tail @ tail_maps[i,:,:].transpose(0,1) @ head_maps[i,:,:] @ normalize_head
+            #normalized_laplacian[i,:,:] = tail_maps[i,:,:].transpose(0,1) @ head_maps[i,:,:]
+            #I commented out the top because I think I already trained for the normalized sheaf when I rescaled all of the inputs!
         # Again, I really shouldn't be using a loop here if I knew the best way to broadcast. Eventually, I need to deal with the fact that half of my data looks like 'nan'. Where is this coming from....? Did I already apply a mask?
+
+        # edge_index, edge_block 
+        # normalized_laplacian[i, :, :] = D_t^{-1/2} R_{t-->e}^T R_{h-->e} D_h^{-1/2}
 
         if self.verbose:
             print("Found the laplacian!")
@@ -160,15 +183,15 @@ def learn_sheaf_laplacian(X, Y, edge_index):
     X: This is a [n_nodes, feature_dim] tensor that assigns each node to its feature vector
     Y: This is a [n_nodes, 1] tensor that assigns each node to its class
 
-    Output
+    Output  (u,v) R_{v-->e}^T R_{u-->e}
     -------
     """
 
-    # print(torch.nonzero(torch.isnan(X[:,0])).shape[0]) This is the number of masked elements.
+    # print(torch.nonzero(torch.isnan(X[:,0])).shape[0]) This is the number of masked elements
 
     n_nodes, stalk_dim = X.shape
     sheaf = KnowledgeSheaf(n_nodes, edge_index, Y, stalk_dim = stalk_dim, verbose = True)
-    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 5, lr = 0.1)
+    sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 200, lr = 0.1)
     edge_index, Delta = sheaf.normalized_laplacian()
 
     return edge_index, Delta
