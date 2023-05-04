@@ -22,19 +22,13 @@
           "scale": "power_two"
         }
       },
-      "loss": "NSSAloss",
+      "loss": "MarginRankingLoss",
       "loss_kwargs_ranges": {
-        "adversarial_temperature": {
-          "type": "float",
-          "low": 0.1, 
-          "high": 1.0,
-          "q": 0.1
-        },
         "margin": {
           "type": "float",
-          "low": 1, 
-          "high": 29,
-          "q": 2.0
+          "low": 1.0, 
+          "high": 3.0,
+          "scale": "linear"
         }
       },
       "optimizer": "adam",
@@ -73,9 +67,8 @@
       }
     },
     "optuna": {
-      "n_trials": 100,
+      "n_trials": 50,
       "metric": "hits@10",
-      "direction": "maximize",
-      "sampler": "random"
-  }
+      "direction": "maximize"  
+    }
 }

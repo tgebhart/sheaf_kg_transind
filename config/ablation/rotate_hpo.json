@@ -67,7 +67,6 @@
     "optuna": {
       "n_trials": 50,
       "metric": "hits@10",
-      "direction": "maximize",
-      "sampler": "random"
+      "direction": "maximize"
     }
   }
