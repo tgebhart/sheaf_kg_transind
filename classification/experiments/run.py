@@ -17,6 +17,8 @@ from utilities.seeds import seeds
 from utilities.extension_strategies import filling
 from experiments.evaluation import test
 
+logger = logging.getLogger(__name__)
+
 def train(model, x, data, optimizer, critereon, train_loader=None, device="cuda"):
     model.train()
 
@@ -64,6 +66,7 @@ def train_sampled(model, train_loader, x, data, optimizer, critereon, device):
 
 
 def run(args):
+    logger.setLevel(level=getattr(logging, args.log.upper(), None))
     logger.info(args)
 
     assert not (
@@ -191,8 +194,5 @@ def run(args):
 if __name__ == "__main__":
     parser = get_parser()
     args = parser.parse_args()
-
-    logger = logging.getLogger(__name__)
-    logger.setLevel(level=getattr(logging, args.log.upper(), None))
 
     run(args)

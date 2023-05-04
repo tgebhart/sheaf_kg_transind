@@ -19,7 +19,7 @@ class KnowledgeSheaf(torch.nn.Module):
     stalk_dim: The dimension of the stalks of the sheaf
     """
 
-    def __init__(self, n_nodes, edge_index, entity_types, stalk_dim: int, restriction_maps = None, verbose = False):
+    def __init__(self, n_nodes, edge_index, entity_types, stalk_dim: int, restriction_maps = None, verbose = False, device = None):
         super().__init__()
         self.edge_index = edge_index
         self.n_edges = edge_index.shape[1]
@@ -36,8 +36,9 @@ class KnowledgeSheaf(torch.nn.Module):
         self.inv_node_degs = self._get_degs() #This is a [n_nodes, 1] tensor that gives the degree^{-1/2} of each node.
 
         self.verbose = verbose # Will print out progress statements if True.
+        self.device = device if device is not None else edge_index.device
 
-        if restriction_maps != None:
+        if restriction_maps is not None:
             self.restriction_maps = restriction_maps
             self.register_buffer("restriction_maps",self.restriction_maps)
 
@@ -117,7 +118,7 @@ class KnowledgeSheaf(torch.nn.Module):
         if self.verbose:
             print("Starting to train maps...")
 
-        self.restriction_maps = torch.nn.Parameter(torch.randn((self.n_entity_types, self.n_entity_types,self.stalk_dim, self.stalk_dim))/self.stalk_dim) #this normalization means with high probability restriction map norms are <= 1.
+        self.restriction_maps = torch.nn.Parameter(torch.randn((self.n_entity_types, self.n_entity_types,self.stalk_dim, self.stalk_dim)).to(self.device)/self.stalk_dim) #this normalization means with high probability restriction map norms are <= 1.
         # [head entity type, tail entity type, :, :] would give the restriction map along the edge head -- > tail.
         # This also encodes self loops, but I don't use these.... I just don't know the best way to index through all combinations of entity types.
 
