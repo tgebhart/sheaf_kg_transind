@@ -72,13 +72,13 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
         #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this..
 
         n_edges = edge_index.shape[1]
-        crow_indices = torch.tensor(csr_array((torch.ones(n_edges), (edge_index[0], edge_index[1])), shape = (n_nodes, n_nodes)).indptr) #This is a hacky way to create the compressed row index format....
+        crow_indices = torch.tensor(csr_array((torch.ones(n_edges), (edge_index[0].cpu(), edge_index[1].cpu())), shape = (n_nodes, n_nodes)).indptr) #This is a hacky way to create the compressed row index format....
         col_indices = edge_index[1]
         propagation_mat = torch.sparse_bsr_tensor(crow_indices, col_indices, edge_blocks, size = (n_nodes*2, n_nodes*2), device = edge_index.device)
 
         #Oh yeah, and I forgot to implement I-Delta in the previous step.
 
-        propagation_mat = torch.sparse.addmm(input=torch.eye(n_nodes*2), mat1 = propagation_mat, mat2 = torch.eye(n_nodes*2), alpha=-1)
+        propagation_mat = torch.sparse.addmm(input=torch.eye(n_nodes*2).to(propagation_mat.device), mat1 = propagation_mat, mat2 = torch.eye(n_nodes*2).to(propagation_mat.device), alpha=-1)
 
         X = X.reshape((-1,1)) # Change a [n_nodes, num_features] to [n_nodes*n_features,1] so I can multiply it by propagation_mat
         #I'll fix the shape later.
