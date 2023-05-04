@@ -51,6 +51,8 @@ if __name__ == '__main__':
 
     strblock = '='*25
 
+    print(f'{strblock} RUNNING {args.dataset} {args.version} {args.hpo_config_name} {strblock}')
+
     print(f'{strblock} HPO {strblock}')
     hpo(args.hpo_config_name, args.dataset, args.version)
     
