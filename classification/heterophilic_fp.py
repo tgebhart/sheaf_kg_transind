@@ -7,7 +7,7 @@ args = parser.parse_args()
 args.dataset_name = 'MixHopSynthetic'
 args.model = 'sage'
 args.filling_method = 'constant_propagation'
-args.missing_rate = 0.99
+args.missing_rate = 0.5
 args.homophily = 0.1
 
 run(args)

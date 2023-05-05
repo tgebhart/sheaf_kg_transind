@@ -1,6 +1,7 @@
 import torch
 from torch.optim import Adam
 from math import comb
+from tqdm import tqdm
 
 from torch_scatter import scatter
 
@@ -124,12 +125,15 @@ class KnowledgeSheaf(torch.nn.Module):
 
         optimizer = Adam(self.parameters(), lr = lr)
 
-        for epoch in range(epochs):
+        pbar = tqdm(range(epochs), desc='train_maps')
+        for epoch in pbar:
             loss, sheaf_energy, penalty = self.loss(entity_reps)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            pbar.set_postfix({'sheaf energy': sheaf_energy.detach().cpu().numpy(), 'trivial penalty':penalty.detach().cpu().numpy()})
 
            # test_laplacian = self.restriction_maps[6,2].transpose(0,1) @ self.restriction_maps[2,6]
 
@@ -191,7 +195,7 @@ def learn_sheaf_laplacian(X, Y, edge_index):
     # print(torch.nonzero(torch.isnan(X[:,0])).shape[0]) This is the number of masked elements
 
     n_nodes, stalk_dim = X.shape
-    sheaf = KnowledgeSheaf(n_nodes, edge_index, Y, stalk_dim = stalk_dim, verbose = True)
+    sheaf = KnowledgeSheaf(n_nodes, edge_index, Y, stalk_dim = stalk_dim, verbose = False)
     sheaf.train_maps(torch.transpose(X, 0, 1), epochs = 200, lr = 0.1)
     edge_index, Delta = sheaf.normalized_laplacian()
 
