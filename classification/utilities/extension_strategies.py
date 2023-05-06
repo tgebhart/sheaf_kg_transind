@@ -1,6 +1,9 @@
 import torch
+from tqdm import tqdm
 
 from torch import Tensor
+from torch_scatter import scatter
+from torch_geometric.utils import degree
 from torch_geometric.typing import Adj, OptTensor
 
 from scipy.sparse import csr_array
@@ -88,6 +91,56 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
 
     return propagation_model.propagate(x=X, mask=feature_mask, propagation_mat=propagation_mat)
 
+def mixhop_rotation_matrix(c1, c2, nclass=10):
+    '''Return the rotation matrix taking class c1 to c2 according to MixHop
+    data generation procedure described here: http://proceedings.mlr.press/v97/abu-el-haija19a/abu-el-haija19a-supp.pdf.
+    This is a batched operation.
+    '''
+    a = 2*torch.pi/nclass
+    if isinstance(c1, int) and isinstance(c2, int):
+        angle = torch.tensor(a*(c1-c2))
+    else:
+        angle = a*(c1-c2)
+    s = torch.sin(angle)
+    c = torch.cos(angle)
+    rot = torch.stack([torch.stack([c, -s], dim=1),
+                    torch.stack([s, c], dim=1)], dim=1)
+    # return torch.tensor([[c,-s],[s,c]], device=c1.device)
+    return rot
+ 
+def lap_mult(edge_index, Fh, xh, xt, nv=None, degree_normalize=False):
+    dx = Fh @ xh.unsqueeze(-1) - xt.unsqueeze(-1)
+    x_e_h = Fh.permute(0,-1,-2) @ dx
+    x_e_t = dx
+
+    nv = torch.unique(edge_index).shape[0] if nv is None else nv
+
+    Lx = torch.zeros((nv, xh.shape[1]), device=edge_index.device)
+    scatter(x_e_h.squeeze(-1),edge_index[0,:],dim=0,out=Lx)
+    scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
+
+    if degree_normalize:
+        degrees = xh.shape[1]*degree(edge_index.flatten())
+        Lx = Lx / degrees.reshape((-1,1))
+
+    return Lx
+
+def mixhop_exact_restriction_propagation(edge_index, X, Y, feature_mask, num_iterations):
+
+    Fh = mixhop_rotation_matrix(Y[edge_index[0]],Y[edge_index[1]])
+    
+    x = torch.clone(X)
+    for _ in tqdm(range(num_iterations), desc='diffusion'):
+        xh = x[edge_index[0,:]]
+        xt = x[edge_index[1,:]]
+        x = lap_mult(edge_index, Fh, xh, xt, nv=X.shape[0], degree_normalize=True)
+        x[feature_mask] = X[feature_mask]
+        # print(torch.linalg.norm((X-x)[~feature_mask]))
+
+    return x
+
+
+
 
 def filling(filling_method, edge_index, X, Y, feature_mask, num_iterations=None):
     if filling_method == "random":
@@ -103,6 +156,8 @@ def filling(filling_method, edge_index, X, Y, feature_mask, num_iterations=None)
         X_reconstructed = X_reconstructed.reshape(X.shape)
     elif filling_method == "constant_propagation":
         X_reconstructed = feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf = False)
+    elif filling_method == "mixhop_exact_restriction":
+        X_reconstructed = mixhop_exact_restriction_propagation(edge_index, X, Y, feature_mask, num_iterations)
     else:
         raise ValueError(f"{filling_method} method not implemented")
     return X_reconstructed
