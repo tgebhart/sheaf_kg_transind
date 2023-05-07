@@ -26,8 +26,8 @@ ALPHA = 1e-1
 
 def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
         alpha=ALPHA, dataset_pct=DATASET_PCT, 
-        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
-        evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
+        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS,
+        diffusion_batch_size=None, evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
     model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
@@ -94,7 +94,7 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
         res_df = []
         eval_iterations = generate_eval_logspace(diffusion_iterations, diffusion_iterations//eval_every) 
         for iteration in range(1, diffusion_iterations+1):
-            xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
+            xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
 
             if iteration in eval_iterations:
 
@@ -168,6 +168,8 @@ if __name__ == '__main__':
                         help='diffusion learning rate (h)')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
+    training_args.add_argument('--diffusion-batch-size', type=int, default=None,
+                        help='batch size for diffusion iteration')
     training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
                         help='number of diffusion steps to take between each evaluation')
     training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
@@ -177,5 +179,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

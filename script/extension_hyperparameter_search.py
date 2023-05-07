@@ -56,7 +56,7 @@ def evaluate_complex(model, model_name, rdata, query_structures=COMPLEX_QUERY_TA
         evaluator.clear()
     return np.mean(results)
 
-def objective(orig_config, rdata, model_name, complex_query_targets, trial):
+def objective(orig_config, rdata, model_name, complex_query_targets, diffusion_batch_size, trial):
     config = orig_config.copy()
     model_kwargs_ranges = config['pipeline'].get('model_kwargs_ranges', {})
     loss_kwargs_ranges = config['pipeline'].get('loss_kwargs_ranges', {})
@@ -117,7 +117,7 @@ def objective(orig_config, rdata, model_name, complex_query_targets, trial):
         extender = get_extender(model_name)(model=model, alpha=alpha)
         print(f'diffusing for {diffusion_iterations} iterations with alpha {alpha}...')
         for dit in tqdm(range(diffusion_iterations), desc='diffusion'):
-            xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask)
+            xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
             norm = torch.linalg.norm(xU)    
             if torch.isnan(norm).any() or torch.isinf(norm).any():
                 print('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
@@ -131,7 +131,7 @@ def objective(orig_config, rdata, model_name, complex_query_targets, trial):
     
 
 def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, train_graph=TRAIN_GRAPH, eval_graph=EVAL_GRAPH,
-        complex_query_targets=COMPLEX_QUERY_TARGETS):
+        complex_query_targets=COMPLEX_QUERY_TARGETS, diffusion_batch_size=None):
 
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, train_graph, eval_graph, include_complex=True)
     training_set = rdata['orig']['triples']
@@ -146,7 +146,7 @@ def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, train_graph=TRAIN_GRA
     config['pipeline']['testing'] = pipeline_testing_set
 
     study = optuna.create_study(direction=config['optuna']['direction'])
-    obj = partial(objective, config.copy(), rdata, model_name, complex_query_targets)
+    obj = partial(objective, config.copy(), rdata, model_name, complex_query_targets, diffusion_batch_size)
     
     study.optimize(obj, n_trials=config['optuna']['n_trials'])
     best_config = study.best_trial.user_attrs['trial_config']
@@ -174,9 +174,11 @@ if __name__ == '__main__':
                         help='graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
                         help='inductive graph to validate on')
+    training_args.add_argument('--diffusion-batch-size', type=int, required=False, default=None,
+                        help='diffusion batch size')
 
     args = parser.parse_args()
 
     run(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, 
-        train_graph=args.train_graph, eval_graph=args.eval_graph)
+        train_graph=args.train_graph, eval_graph=args.eval_graph, diffusion_batch_size=args.diffusion_batch_size)
 

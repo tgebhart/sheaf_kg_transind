@@ -43,6 +43,8 @@ if __name__ == '__main__':
                         help='evaluation batch size')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
+    training_args.add_argument('--diffusion-batch-size', type=int, default=None,
+                        help='diffusion batch size')
     training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
                         help='number of diffusion steps to take between each evaluation')
     training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     print(f'{strblock} RUNNING {args.dataset} {args.version} {args.hpo_config_name} {strblock}')
 
     print(f'{strblock} HPO {strblock}')
-    hpo(args.hpo_config_name, args.dataset, args.version)
+    hpo(args.hpo_config_name, args.dataset, args.version, diffusion_batch_size=args.diffusion_batch_size)
     
     print(f'{strblock} Training Best {strblock}')
     train(args.hpo_config_name, args.dataset, args.version, train_graph=args.orig_graph, eval_graph=args.eval_graph)
@@ -67,5 +69,5 @@ if __name__ == '__main__':
     
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, version=args.version, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

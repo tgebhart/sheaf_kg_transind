@@ -28,7 +28,7 @@ def evaluate(model, eval_triples, inference_graph):
     res = result_df.set_index(['Side','Type','Metric']).loc['both','realistic','hits_at_10'].values[0]
     return res
 
-def objective(orig_config, dataset, model_name, trial):
+def objective(orig_config, dataset, model_name, diffusion_batch_size, trial):
     config = orig_config.copy()
     model_kwargs_ranges = config['pipeline'].get('model_kwargs_ranges', {})
     loss_kwargs_ranges = config['pipeline'].get('loss_kwargs_ranges', {})
@@ -89,7 +89,7 @@ def objective(orig_config, dataset, model_name, trial):
         extender = get_extender(model_name)(model=model, alpha=alpha)
         print(f'diffusing for {diffusion_iterations} iterations with alpha {alpha}...')
         for dit in tqdm(range(diffusion_iterations), desc='diffusion'):
-            xU = diffuse_interior(extender, inference_graph.mapped_triples, interior_mask)
+            xU = diffuse_interior(extender, inference_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
             norm = torch.linalg.norm(xU)    
             if torch.isnan(norm).any() or torch.isinf(norm).any():
                 print('INTERIOR VERTICES CONTAIN NANs or INFs, stopping diffusion')
@@ -103,7 +103,7 @@ def objective(orig_config, dataset, model_name, trial):
     return evaluation_metric
     
 
-def run(hpo_config_name, dataset_name, version):
+def run(hpo_config_name, dataset_name, version, diffusion_batch_size=None):
 
     config = load_hpo_config(hpo_config_name)
     model_name, hpo_config_name = get_model_name_from_config(hpo_config_name)
@@ -116,7 +116,7 @@ def run(hpo_config_name, dataset_name, version):
     config['pipeline']['testing'] = eval_triples
 
     study = optuna.create_study(direction=config['optuna']['direction'])
-    obj = partial(objective, config.copy(), dataset, model_name)
+    obj = partial(objective, config.copy(), dataset, model_name, diffusion_batch_size)
     
     study.optimize(obj, n_trials=config['optuna']['n_trials'])
     best_config = study.best_trial.user_attrs['trial_config']
@@ -140,8 +140,10 @@ if __name__ == '__main__':
                         help='dataset version to run')
     training_args.add_argument('--hpo-config-name', type=str, default=HPO_CONFIG_NAME,
                         help='name of hyperparameter search configuration file')
+    training_args.add_argument('--diffusion-batch-size', type=int, required=False, default=None,
+                        help='diffusion batch size')
 
     args = parser.parse_args()
 
-    run(args.hpo_config_name, args.dataset, args.version)
+    run(args.hpo_config_name, args.dataset, args.version, diffusion_batch_size=args.diffusion_batch_size)
 

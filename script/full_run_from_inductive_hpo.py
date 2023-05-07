@@ -20,7 +20,7 @@ from extension_hyperparameter_search import run as hpo
 from train_best_from_hpo import run as train
 from extend_best_from_hpo import run as extend
 from complex_reasoning_best_from_hpo import run as reason
-from data_tools import load_hpo_config, get_model_name_from_config
+from data_tools import get_model_name_from_config
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple PyKeen training pipeline')
@@ -44,6 +44,8 @@ if __name__ == '__main__':
                         help='evaluation batch size')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
+    training_args.add_argument('--diffusion-batch-size', type=int, default=None,
+                        help='batch size for diffusion')
     training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
                         help='number of diffusion steps to take between each evaluation')
     training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
@@ -55,7 +57,7 @@ if __name__ == '__main__':
     print(f'{strblock} RUNNING {args.dataset} {args.dataset_pct} {args.hpo_config_name} {strblock}')
 
     print(f'{strblock} HPO {strblock}')
-    hpo(args.hpo_config_name, args.dataset, args.dataset_pct, args.orig_graph, args.eval_graph)
+    hpo(args.hpo_config_name, args.dataset, args.dataset_pct, args.orig_graph, args.eval_graph, diffusion_batch_size=args.diffusion_batch_size)
     
     print(f'{strblock} Training Best {strblock}')
     train(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, graph=args.orig_graph, eval_graph=args.eval_graph)
@@ -68,7 +70,7 @@ if __name__ == '__main__':
     
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
     
     print(f'{strblock} Complex Queries Best {strblock}')
