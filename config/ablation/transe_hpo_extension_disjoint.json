@@ -18,11 +18,19 @@
         "embedding_dim": {
           "type": "int",
           "low": 2,
-          "high": 8,
+          "high": 9,
           "scale": "power_two"
         }
       },
-      "loss": "CrossEntropyloss",
+      "loss": "MarginRankingLoss",
+      "loss_kwargs_ranges": {
+        "margin": {
+          "type": "float",
+          "low": 1.0, 
+          "high": 3.0,
+          "scale": "linear"
+        }
+      },
       "regularizer": "NoRegularizer",
       "optimizer": "adam",
       "optimizer_kwargs": {
@@ -36,16 +44,14 @@
           "scale": "log"
         }
       },
-      "training_loop": "lcwa",
-      "training_kwargs": {
-        "num_epochs": 1000
-      },
-      "training_kwargs_ranges": {
-        "label_smoothing": {
-          "type": "float",
-          "low": 0.001,
-          "high": 1.0,
-          "scale": "log"
+      "training_loop": "slcwa",
+      "negative_sampler": "BasicNegativeSampler",
+      "negative_sampler_kwargs_ranges": {
+        "num_negs_per_pos": {
+          "type": "int",
+          "low": 1,
+          "high": 50,
+          "q": 1
         }
       },
       "evaluator": "RankBasedEvaluator",
