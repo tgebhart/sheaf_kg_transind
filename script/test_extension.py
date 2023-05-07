@@ -8,7 +8,7 @@ from pykeen.evaluation import RankBasedEvaluator
 
 from data_tools import get_train_eval_inclusion_data
 from utils import expand_model_to_inductive_graph
-from extension import get_extender, diffuse_interior, diffuse_interior_batched
+from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
@@ -19,7 +19,7 @@ C1_DIM = 32
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
 EVALUATION_BATCH_SIZE = 512
-DATASET_PCT = 175
+DATASET_PCT = 106
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
 FROM_SAVE = True
@@ -184,7 +184,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # run(args.model, args.dataset, args.num_epochs, args.random_seed,
+    #     args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
+    #     orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+    #      alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
     run(args.model, args.dataset, args.num_epochs, args.random_seed,
         args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=100000,
          alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

@@ -39,27 +39,6 @@ def coboundary(edge_index,Fh,Ft,relabel=False):
 #     diffuser.update_representations(xU, interior_vertices)
 #     return xU
 
-# def diffuse_interior_batched(diffuser, triples, interior_ent_msk, batch_size=2500, k=2):
-#     edge_index = triples[:,[0,2]].T
-#     relations = triples[:,1]
-#     all_ents = edge_index.flatten().unique()
-#     num_nodes = all_ents.size(0)
-#     interior_vertices = all_ents[interior_ent_msk]
-
-#     if batch_size > interior_vertices.shape[0]:
-#         batch_size = interior_vertices.shape[0]
-    
-#     idxs = torch.randperm(interior_vertices.shape[0])
-#     for bix in range(0,idxs.shape[0], batch_size):
-#         idxs_batch = idxs[bix:bix+batch_size]
-#         interiors_batch = interior_vertices[idxs_batch]
-
-#         sg_nodes, sg_edge_index, mapping, sg_edge_mask = k_hop_subgraph(interiors_batch, k, edge_index, relabel_nodes=True)
-#         print(f'{sg_edge_mask.sum() / edge_index.shape[1]:.2%}')
-#         xU, _ = diffuser.diffuse_interior(edge_index[:,sg_edge_mask], relations[sg_edge_mask], relabel=True)
-#         diffuser.update_representations(xU, interiors_batch, mapping)
-#     return xU
-
 def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
     edge_index = triples[:,[0,2]].T
     relations = triples[:,1]
@@ -72,6 +51,10 @@ def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
     if batch_size > edge_index.shape[1]:
         batch_size = edge_index.shape[1]
     
+    degree_normalize = diffuser.degree_normalize
+    # we will normalize after all batches are processed, if required
+    diffuser.degree_normalize = False
+
     xU = None
     for bix in range(0,edge_index.shape[1], batch_size):
         xUb, _ = diffuser.diffuse_interior(edge_index[:,bix:bix+batch_size], relations[bix:bix+batch_size], nv=num_nodes)
@@ -80,7 +63,11 @@ def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
         else:
             xU += xUb
     
+    if degree_normalize:
+        degrees = xU.shape[1]*degree(edge_index.flatten().to(diffuser.device))
+        xU = xU / degrees.reshape((-1,1))
     diffuser.update_representations(xU, interior_vertices)
+    diffuser.degree_normalize = degree_normalize
     return xU
 
 class KGExtender():
@@ -148,7 +135,8 @@ class SEExtender(KGExtender):
         _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
         return r[0], r[1]
     
-    def laplacian_mult(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, relabel: bool=False, nv: int=None):
+    def laplacian_mult(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, 
+                       relabel: bool=False, nv: int=None):
         edge_index = edge_index.to(self.device)
         xh, xt = self._ht(edge_index)
         Fh, Ft = self._restriction_maps(edge_type)
@@ -167,8 +155,7 @@ class SEExtender(KGExtender):
         scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
         if self.degree_normalize:
-            degrees = xh.shape[1]*degree(edge_index.flatten(), num_nodes=nv)
-            degrees[degrees == 0] = 1
+            degrees = xh.shape[1]*degree(edge_index.flatten())
             Lx = Lx / degrees.reshape((-1,1))
 
         return Lx, edge_index
@@ -208,7 +195,8 @@ class TransEExtender(KGExtender):
         _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
         return r
     
-    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, relabel: bool=False, nv: int=None):
+    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, 
+                                     relabel: bool=False, nv: int=None):
         edge_index = edge_index.to(self.device)
         xh, xt = self._ht(edge_index)
         b = self._b(edge_type)
@@ -255,7 +243,8 @@ class RotatEExtender(KGExtender):
         interior_vertices_diffused = interior_vertices_model if interior_vertices_diffused is None else interior_vertices_diffused
         self.model.entity_representations[0]._embeddings.weight[interior_vertices_model] -= torch.view_as_real(self.alpha*xU[interior_vertices_diffused]).reshape((interior_vertices_diffused.shape[0],-1))
     
-    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, relabel: bool=False, nv: int=None):
+    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, 
+                                     relabel: bool=False, nv: int=None):
         edge_index = edge_index.to(self.device)
         xh, xt = self._ht(edge_index)
         b = self._b(edge_type)
@@ -304,7 +293,8 @@ class TransRExtender(KGExtender):
         _, r, _ = self.model._get_representations(h=nu, r=edge_type, t=nu, mode=None)
         return r[0]
     
-    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, relabel: bool=False, nv: int=None):
+    def laplacian_mult_translational(self, edge_index: torch.LongTensor, edge_type: torch.LongTensor, 
+                                     relabel: bool=False, nv: int=None):
         edge_index = edge_index.to(self.device)
         xh, xt = self._ht(edge_index)
         b = self._b(edge_type)
