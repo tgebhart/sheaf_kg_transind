@@ -55,7 +55,7 @@
       },
       "training_kwargs": {
         "num_epochs": 1000,
-        "batch_size": 512,
+        "batch_size": null,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -63,7 +63,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 512
+        "batch_size": null
       }
     },
     "extension": {
