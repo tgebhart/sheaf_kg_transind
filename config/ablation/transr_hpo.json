@@ -68,13 +68,12 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 64
+        "batch_size": 1024
       }
     },
     "optuna": {
-      "n_trials": 15,
+      "n_trials": 10,
       "metric": "hits@10",
-      "direction": "maximize",
-      "sampler": "random"
+      "direction": "maximize"
     }
   }
