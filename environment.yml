@@ -10,6 +10,7 @@ dependencies:
   - cudatoolkit=11.3
   - pip: 
     - pyg
+    - torch-householder
     - torch-geometric
     - ninja
     - easydict

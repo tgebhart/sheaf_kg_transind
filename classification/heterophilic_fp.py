@@ -8,6 +8,7 @@ args.dataset_name = 'MixHopSynthetic'
 args.model = 'sage'
 args.filling_method = 'constant_propagation'
 args.missing_rate = 0.99
-args.homophily = 0.1
+args.homophily = 0.8
+args.n_runs = 1
 
 run(args)
