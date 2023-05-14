@@ -62,7 +62,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 16
+        "batch_size": 32
       }
     },
     "extension": {
@@ -83,7 +83,7 @@
       }
     },
     "optuna": {
-      "n_trials": 25,
+      "n_trials": 20,
       "metric": "hits@10",
       "direction": "maximize"  
     }
