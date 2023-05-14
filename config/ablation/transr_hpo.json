@@ -68,7 +68,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 1024
+        "batch_size": 2048
       }
     },
     "optuna": {
