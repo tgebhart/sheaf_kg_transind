@@ -91,16 +91,33 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
 
     return propagation_model.propagate(x=X, mask=feature_mask, propagation_mat=propagation_mat)
 
-def mixhop_rotation_matrix(c1, c2, nclass=10):
-    '''Return the rotation matrix taking class c1 to c2 according to MixHop
+# def mixhop_rotation_matrix(c1, c2, nclass=10):
+#     '''Return the rotation matrix taking class c1 to c2 according to MixHop
+#     data generation procedure described here: http://proceedings.mlr.press/v97/abu-el-haija19a/abu-el-haija19a-supp.pdf.
+#     This is a batched operation.
+#     '''
+#     a = 2*torch.pi/nclass
+#     if isinstance(c1, int) and isinstance(c2, int):
+#         angle = torch.tensor(a*(c1-c2))
+#     else:
+#         angle = a*(c1-c2)
+#     s = torch.sin(angle)
+#     c = torch.cos(angle)
+#     rot = torch.stack([torch.stack([c, -s], dim=1),
+#                     torch.stack([s, c], dim=1)], dim=1)
+#     # return torch.tensor([[c,-s],[s,c]], device=c1.device)
+#     return rot
+
+def mixhop_rotation_matrix(c, nclass=10):
+    '''Return the rotation matrix taking class c to class 0 according to MixHop
     data generation procedure described here: http://proceedings.mlr.press/v97/abu-el-haija19a/abu-el-haija19a-supp.pdf.
     This is a batched operation.
     '''
     a = 2*torch.pi/nclass
-    if isinstance(c1, int) and isinstance(c2, int):
-        angle = torch.tensor(a*(c1-c2))
+    if isinstance(c, int):
+        angle = torch.tensor(-a*(c))
     else:
-        angle = a*(c1-c2)
+        angle = -a*(c)
     s = torch.sin(angle)
     c = torch.cos(angle)
     rot = torch.stack([torch.stack([c, -s], dim=1),
@@ -108,10 +125,26 @@ def mixhop_rotation_matrix(c1, c2, nclass=10):
     # return torch.tensor([[c,-s],[s,c]], device=c1.device)
     return rot
  
-def lap_mult(edge_index, Fh, xh, xt, nv=None, degree_normalize=False):
-    dx = Fh @ xh.unsqueeze(-1) - xt.unsqueeze(-1)
-    x_e_h = Fh.permute(0,-1,-2) @ dx
-    x_e_t = dx
+def lap_mult(edge_index, Fh, Ft, xh, xt, nv=None, degree_normalize=False):
+    
+    if degree_normalize:
+        D = torch.zeros((nv, Fh.shape[1], Fh.shape[2]), device=edge_index.device)
+        scatter(Fh@Fh.permute(0,-1,-2),edge_index[0,:],dim=0,out=D)
+        scatter(Ft@Ft.permute(0,-1,-2),edge_index[1,:],dim=0,out=D)
+        D = torch.inverse(D.pow(.5))
+        Fh = Fh @ D[edge_index[0]]
+        Ft = Ft @ D[edge_index[1]]
+        dx = Fh @ D[edge_index[0]] @ xh.unsqueeze(-1) - Ft @ D[edge_index[1]] @ xt.unsqueeze(-1)
+        x_e_h = Fh.permute(0,-1,-2) @ D[edge_index[0]] @ dx
+        x_e_t = Ft.permute(0,-1,-2) @ D[edge_index[1]] @ dx
+    else:
+        dx = Fh @ xh.unsqueeze(-1) - Ft @ xt.unsqueeze(-1)
+        x_e_h = Fh.permute(0,-1,-2) @ dx
+        x_e_t = Ft.permute(0,-1,-2) @ dx
+
+    # dx = Fh @ xh.unsqueeze(-1) - Ft @ xt.unsqueeze(-1)
+    # x_e_h = Fh.permute(0,-1,-2) @ dx
+    # x_e_t = Ft.permute(0,-1,-2) @ dx
 
     nv = torch.unique(edge_index).shape[0] if nv is None else nv
 
@@ -119,24 +152,28 @@ def lap_mult(edge_index, Fh, xh, xt, nv=None, degree_normalize=False):
     scatter(x_e_h.squeeze(-1),edge_index[0,:],dim=0,out=Lx)
     scatter(-x_e_t.squeeze(-1),edge_index[1,:],dim=0,out=Lx)
 
-    if degree_normalize:
-        degrees = xh.shape[1]*degree(edge_index.flatten())
-        Lx = Lx / degrees.reshape((-1,1))
+    # if degree_normalize:
+    #     degrees = xh.shape[1]*degree(edge_index.flatten())
+    #     Lx = Lx / degrees.reshape((-1,1))
 
     return Lx
 
-def mixhop_exact_restriction_propagation(edge_index, X, Y, feature_mask, num_iterations):
+def mixhop_exact_restriction_propagation(edge_index, X, Y, feature_mask, num_iterations, alpha=0.1):
 
-    Fh = mixhop_rotation_matrix(Y[edge_index[0]],Y[edge_index[1]])
+    Fh = mixhop_rotation_matrix(Y[edge_index[0]])
+    Ft = mixhop_rotation_matrix(Y[edge_index[1]])
+
+    # Fh = mixhop_rotation_matrix(torch.zeros_like(Y[edge_index[0]]))
+    # Ft = mixhop_rotation_matrix(torch.zeros_like(Y[edge_index[1]]))
     
     x = torch.clone(X)
     for _ in tqdm(range(num_iterations), desc='diffusion'):
         xh = x[edge_index[0,:]]
         xt = x[edge_index[1,:]]
-        x = lap_mult(edge_index, Fh, xh, xt, nv=X.shape[0], degree_normalize=True)
+        x -= alpha*lap_mult(edge_index, Fh, Ft, xh, xt, nv=X.shape[0], degree_normalize=True)
         x[feature_mask] = X[feature_mask]
-        # print(torch.linalg.norm((X-x)[~feature_mask]))
-
+    
+    print(torch.linalg.norm((X-x)[~feature_mask]))
     return x
 
 
