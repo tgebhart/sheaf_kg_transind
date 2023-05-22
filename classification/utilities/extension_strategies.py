@@ -72,6 +72,8 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
     else:
         edge_index, edge_blocks = sheaf_diffusion_iter(X, Y, edge_index, n_nodes=n_nodes) #First edge labels are 2-->6
 
+        print("matrix norms of laplacian blocks: {}".format(torch.linalg.matrix_norm(edge_blocks)))
+
         #At first I created a sparse_bsr_tensor, but this poorly supported. In particular, tensor.sparse.mm() is not supported on lots of CPU's or something. I got it working by working on a linux research server, rather than my mac. Still, it may be worth changing this..
 
         n_edges = edge_index.shape[1]
@@ -86,6 +88,8 @@ def feature_propagation(edge_index, X, Y, feature_mask, num_iterations, sheaf : 
         X = X.reshape((-1,1)) # Change a [n_nodes, num_features] to [n_nodes*n_features,1] so I can multiply it by propagation_mat
         #I'll fix the shape later.
         feature_mask = feature_mask.reshape((-1,1))
+
+
         
         #My idea to change this from sparse_bsr_tensor is to use the scipy.sparse library to create a sparse block matrix and then convert over to the pytorch sparse_csr format. Maybe this is better supported?
 
