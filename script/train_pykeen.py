@@ -61,7 +61,7 @@ def run(model, dataset, num_epochs, random_seed,
     mr['query_structure'] = 'test'
 
     # save out
-    savedir = f'data/{dataset}/{dataset_pct}/models/{graph}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
+    savedir = f'data/{dataset}/{dataset_pct}/models/development/{graph}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     
