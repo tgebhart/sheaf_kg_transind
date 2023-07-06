@@ -30,7 +30,7 @@ def coboundary(edge_index,Fh,Ft,relabel=False):
         r = list(range(e*de,(e+1)*de))
         idxs += list(product(r, list(range(h*dv,(h+1)*dv)))) + \
               list(product(r, list(range(t*dv,(t+1)*dv))))
-        vals = torch.cat((vals, Fh[e,:,:].flatten(), -Fh[e,:,:].flatten()))
+        vals = torch.cat((vals, Fh[e,:,:].flatten(), -Ft[e,:,:].flatten()))
     return torch.sparse_coo_tensor(torch.LongTensor(idxs).T, vals, size=(ne*de,nv*dv), device=device)
 
 def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
