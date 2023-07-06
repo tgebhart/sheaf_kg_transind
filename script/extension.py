@@ -201,7 +201,9 @@ class SEExtender(KGExtender):
 
         # move everything to cpu due to memory constraints
         xB = self._x(boundary_entities).to(solution_device)
-        xU = -torch.linalg.lstsq(LUU.to(solution_device).to_dense(), LUB.to(solution_device).to_dense()).solution @ xB
+        LUU_inv = torch.linalg.pinv(LUU.to(solution_device).to(solution_device).to_dense())
+        xU = -LUU_inv @ LUB.to(solution_device) @ xB
+        # xU = -torch.linalg.lstsq(LUU.to(solution_device).to_dense(), LUB.to(solution_device).to_dense()).solution @ xB
         return xU.to(self.device)
 
 class TransEExtender(KGExtender):
