@@ -75,8 +75,6 @@ def extend_interior(extender, triples, interior_ent_msk, batch_size=None):
     interior_interior_msk = torch.isin(edge_index[0,:], interior_vertices) & torch.isin(edge_index[1,:], interior_vertices)
     interior_boundary_msk = (torch.isin(edge_index[0,:], interior_vertices) & torch.isin(edge_index[1,:], boundary_vertices)) | \
                             (torch.isin(edge_index[1,:], interior_vertices) & torch.isin(edge_index[0,:], boundary_vertices))
-    
-
 
     if batch_size is None:
         batch_size = edge_index.shape[1]

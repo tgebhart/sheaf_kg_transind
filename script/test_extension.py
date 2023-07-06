@@ -101,8 +101,10 @@ def run(model, dataset, num_epochs, random_seed,
 
         extender = get_extender(model)(model=orig_model, alpha=alpha)
 
+        print('extending interior')
         xU = extend_interior(extender, eval_graph.mapped_triples, interior_mask)
-        
+        print('extended')
+        print(xU)
         res_df = []
         for iteration in tqdm(range(diffusion_iterations)):
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
