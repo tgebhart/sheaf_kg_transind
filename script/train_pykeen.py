@@ -5,10 +5,10 @@ from pykeen.pipeline import pipeline
 from data_tools import get_train_eval_inclusion_data
 
 DATASET = 'fb15k-237'
-MODEL = 'transr'
+MODEL = 'se'
 NUM_EPOCHS = 25
 C0_DIM = 32
-C1_DIM = 16
+C1_DIM = 32
 RANDOM_SEED = 134
 DATASET_PCT = 175
 GRAPH = 'train'
