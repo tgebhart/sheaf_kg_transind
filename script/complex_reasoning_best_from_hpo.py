@@ -21,16 +21,24 @@ EVALUATE_DEVICE = 'cuda'
 
 DIFFUSION_ITERATIONS = 5000
 ALPHA = 1e-1
+TRAIN_COMPLEX = False
     
 def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATE_DEVICE, 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
-        alpha=ALPHA, query_structures=QUERY_STRUCTURES):
-    
+        alpha=ALPHA, query_structures=QUERY_STRUCTURES,
+        train_complex=TRAIN_COMPLEX):
+        
     model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
-    savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
-    savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
+    if args.train_complex:
+        savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best/train_complex'
+        savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best/train_complex'
+    else:
+        savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
+        savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
+
+    model_name = f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'
 
     rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type, include_complex=True)
     orig_graph = rdata['orig']['graph']
@@ -44,7 +52,7 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATE_DEVICE,
     evaluator = RankBasedEvaluator()
 
     print('loading eval model...')
-    eval_model = torch.load(os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl')).to(evaluate_device)
+    eval_model = torch.load(os.path.join(savedir_model, model_name)).to(evaluate_device)
     with torch.no_grad():
 
         extender = get_complex_extender(model)(model=eval_model)
@@ -102,9 +110,11 @@ if __name__ == '__main__':
                         help='diffusion learning rate')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
+    training_args.add_argument('--train_complex', action='store_true', 
+                        help='whether to run complex training')
 
     args = parser.parse_args()
 
     run(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations)
+         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, train_complex=args.train_complex)

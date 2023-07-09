@@ -139,7 +139,8 @@ def tensorize(q, query_structure):
     return t
 
 def generate_mapped_triples_both(query_loc_hard, answer_loc_easy, answer_loc_hard, 
-                                query_structures=QUERY_STRUCTURES, filter_fun=None, remap_fun=None):
+                                query_structures=QUERY_STRUCTURES, filter_fun=None, remap_fun=None,
+                                skip_ea=False):
 
     with open(answer_loc_easy, 'rb') as f:
         easy_answers = pickle.load(f)
@@ -159,7 +160,7 @@ def generate_mapped_triples_both(query_loc_hard, answer_loc_easy, answer_loc_har
         qlist = []
         for q in qs:
             qtens = tensorize(q, query_structure)
-            easy_ans = list(ea[q])
+            easy_ans = list(ea[q]) if not skip_ea else []
             hard_ans = list(ha[q])
             num_hard = len(hard_ans)
             ans = hard_ans + easy_ans # combine easy and hard answers
@@ -177,7 +178,8 @@ def generate_mapped_triples_both(query_loc_hard, answer_loc_easy, answer_loc_har
         mapped_triples[query_structure] = qlist
     return mapped_triples
 
-def load_queries_and_answers(dataset, pct, eval_graph_factory, eval_graph_name, query_structures=QUERY_STRUCTURES):
+def load_queries_and_answers(dataset, pct, eval_graph_factory, eval_graph_name, 
+                            query_structures=QUERY_STRUCTURES, skip_ea=False):
 
     dstf = find_dataset_betae(dataset, pct)
 
@@ -193,11 +195,12 @@ def load_queries_and_answers(dataset, pct, eval_graph_factory, eval_graph_name, 
     test_queries = generate_mapped_triples_both(dstf[eval_graph_name]['queries'], 
                                                 dstf[eval_graph_name]['answers']['easy'], dstf[eval_graph_name]['answers']['hard'],
                                                 query_structures=query_structures, 
-                                                remap_fun=remap_fun)
+                                                remap_fun=remap_fun, skip_ea=skip_ea)
     return test_queries
 
 def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type, 
-                                  include_complex=False, query_structures=QUERY_STRUCTURES):
+                                  include_complex=False, query_structures=QUERY_STRUCTURES,
+                                  skip_ea=False):
     print('loading factories and graphs...')
     train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
     train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
@@ -229,7 +232,7 @@ def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_gr
     
     if include_complex:
         r['complex'] = load_queries_and_answers(dataset, dataset_pct, eval_graph, eval_graph_type,
-                                                query_structures=query_structures)
+                                                query_structures=query_structures, skip_ea=skip_ea)
 
     return r
 

@@ -174,12 +174,12 @@ class ComplexExtender(ABC):
         return hix,rix
     
     def slice_and_score_complex(self, query_structure: str, queries: List[dict],
-                                batch_size: int, slice_size: int = None) -> torch.FloatTensor:
+                                batch_size: int, slice_size: int = None, progress=True) -> torch.FloatTensor:
         
         slice_size = self.num_entities if slice_size is None else slice_size
         ent_idxs = torch.arange(self.num_entities)
-        res = torch.empty((len(queries), self.num_entities))
-        for bix in tqdm(range(0,len(queries), batch_size), desc=f'batched {query_structure}'):
+        res = torch.zeros((len(queries), self.num_entities))
+        for bix in tqdm(range(0,len(queries), batch_size), desc=f'batched {query_structure}', disable=not progress):
             batch = queries[bix:bix+batch_size]
             
             for slix in range(0, self.num_entities, slice_size):

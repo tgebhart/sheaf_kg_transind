@@ -15,6 +15,8 @@ CONVERGENCE_TOL = 1e-4
 DIFFUSION_ITERATIONS = 10000
 EVAL_EVERY = 100
 ALPHA = 1e-1
+COMPLEX_EPOCHS = 10
+COMPLEX_BATCH_SIZE = 128
 
 from extension_hyperparameter_search import run as hpo
 from train_best_from_hpo import run as train
@@ -50,6 +52,12 @@ if __name__ == '__main__':
                         help='number of diffusion steps to take between each evaluation')
     training_args.add_argument('--convergence-tolerance', type=float, default=CONVERGENCE_TOL,
                         help='diffusion convergence tolerance within which to stop diffusing')
+    training_args.add_argument('--complex_epochs', type=int, default=COMPLEX_EPOCHS, 
+                        help='training epochs for complex')
+    training_args.add_argument('--complex_batch_size', type=int, default=COMPLEX_BATCH_SIZE, 
+                        help='Complex training batch size')
+    training_args.add_argument('--train_complex', action='store_true', 
+                        help='whether to run complex training')
     args = parser.parse_args()
 
     strblock = '='*25
@@ -60,7 +68,8 @@ if __name__ == '__main__':
     hpo(args.hpo_config_name, args.dataset, args.dataset_pct, args.orig_graph, args.eval_graph, diffusion_batch_size=args.diffusion_batch_size)
     
     print(f'{strblock} Training Best {strblock}')
-    train(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, graph=args.orig_graph, eval_graph=args.eval_graph)
+    train(args.hpo_config_name, args.dataset, dataset_pct=args.dataset_pct, graph=args.orig_graph, eval_graph=args.eval_graph,
+          train_complex=args.train_complex, complex_epochs=args.complex_epochs, complex_batch_size=args.complex_batch_size)
 
     model_name, hpo_config_name = get_model_name_from_config(args.hpo_config_name)
     best_hpo_loc = f'data/{args.dataset}/{args.dataset_pct}/models/train/{model_name}/ablation/{args.hpo_config_name}/best_pipeline/pipeline_config.json'
@@ -71,9 +80,25 @@ if __name__ == '__main__':
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
-        alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
-    
+        alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance, 
+        train_complex=False)
+        
     print(f'{strblock} Complex Queries Best {strblock}')
     reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-         alpha=alpha, diffusion_iterations=args.diffusion_iterations)
+            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+            alpha=alpha, diffusion_iterations=args.diffusion_iterations,
+            train_complex=False)
+    
+    if args.train_complex:
+        print(f'{strblock} Extending Best (complex) {strblock}')
+        extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
+            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+            alpha=alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance, 
+            train_complex=True)
+
+
+        print(f'{strblock} Complex Queries Best (complex) {strblock}')
+        reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
+            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+            alpha=alpha, diffusion_iterations=args.diffusion_iterations,
+            train_complex=True)
