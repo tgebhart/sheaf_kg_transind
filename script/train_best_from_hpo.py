@@ -9,7 +9,6 @@ import numpy as np
 from pykeen.pipeline import pipeline_from_config
 from pykeen.sampling import BasicNegativeSampler
 from pykeen.losses import MarginRankingLoss
-from pykeen.evaluation import RankBasedEvaluator
 
 from data_tools import get_train_eval_inclusion_data, get_model_name_from_config, load_hpo_config
 from complex_extension import get_complex_extender
@@ -65,7 +64,8 @@ def create_negative_queries(queries, sampler_batch, neg_sampler):
     return neg_batch
 
 def attempt_infer_best_hyperparams(best_hpo_loc):
-    config = load_hpo_config(best_hpo_loc)
+    with open(best_hpo_loc, 'r') as f:
+        config = json.load(f)
     r = {}
     if 'pipeline' in config:
         pc = config['pipeline']
@@ -76,7 +76,6 @@ def attempt_infer_best_hyperparams(best_hpo_loc):
         if 'optimizer_kwargs' in pc and pc['optimizer'] == 'adam':
             r['lr'] = pc['optimizer_kwargs'].get('lr', None)
 
-
 def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_structures=QUERY_STRUCTURES,
                   complex_epochs=COMPLEX_EPOCHS, complex_batch_size=COMPLEX_BATCH_SIZE):
     
@@ -85,7 +84,6 @@ def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_s
 
     loss = MarginRankingLoss(margin=config['margin'])
     optimizer = Adam(train_model.get_grad_params(), lr=config['lr'])
-    evaluator = RankBasedEvaluator()
 
     epochs = list(range(1,complex_epochs))
 
