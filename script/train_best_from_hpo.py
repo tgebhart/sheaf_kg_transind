@@ -77,7 +77,7 @@ def attempt_infer_best_hyperparams(best_hpo_loc):
             r['lr'] = pc['optimizer_kwargs'].get('lr', None)
 
 
-def train_complex(model, train_model, rdata, best_hpo_loc, savedir, query_structures=QUERY_STRUCTURES,
+def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_structures=QUERY_STRUCTURES,
                   complex_epochs=COMPLEX_EPOCHS, complex_batch_size=COMPLEX_BATCH_SIZE):
     
     extender = get_complex_extender(model)(model=train_model)
@@ -145,7 +145,7 @@ def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, graph=GRAPH, eval_gra
     trained_model = train_model(training_set, testing_set, best_hpo_loc, savedir)
 
     if train_complex:
-        train_complex(model, trained_model, tdata, best_hpo_loc, savedir, 
+        train_complex_loop(model, trained_model, tdata, best_hpo_loc, savedir, 
                     query_structures=query_structures, complex_epochs=complex_epochs, 
                     complex_batch_size=complex_batch_size)
 
