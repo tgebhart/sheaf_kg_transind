@@ -66,7 +66,9 @@ def create_negative_queries(queries, sampler_batch, neg_sampler):
 def attempt_infer_best_hyperparams(best_hpo_loc):
     with open(best_hpo_loc, 'r') as f:
         config = json.load(f)
-    r = {}
+    r = {'margin':None,
+         'num_negs_per_pos':None,
+         'lr':None}
     if 'pipeline' in config:
         pc = config['pipeline']
         if 'loss_kwargs' in pc and pc['loss'] == 'marginranking':
@@ -75,6 +77,7 @@ def attempt_infer_best_hyperparams(best_hpo_loc):
             r['num_negs_per_pos'] = pc['negative_sampler_kwargs'].get('num_negs_per_pos', None)
         if 'optimizer_kwargs' in pc and pc['optimizer'] == 'adam':
             r['lr'] = pc['optimizer_kwargs'].get('lr', None)
+    return r
 
 def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_structures=QUERY_STRUCTURES,
                   complex_epochs=COMPLEX_EPOCHS, complex_batch_size=COMPLEX_BATCH_SIZE):
