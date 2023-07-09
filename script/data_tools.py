@@ -231,6 +231,7 @@ def get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_gr
         'inclusion':{'entities':orig_eval_entity_inclusion, 'relations':orig_eval_relation_inclusion}}
     
     if include_complex:
+        print('loading complex queries...')
         r['complex'] = load_queries_and_answers(dataset, dataset_pct, eval_graph, eval_graph_type,
                                                 query_structures=query_structures, skip_ea=skip_ea)
 
