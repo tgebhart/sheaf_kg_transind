@@ -139,7 +139,7 @@ def run(hpo_config_name, dataset, dataset_pct=DATASET_PCT, graph=GRAPH, eval_gra
         
     # model on training dataset (graph)
     print(f'TRAINING MODEL ON {graph} GRAPH...')
-    tdata = get_train_eval_inclusion_data(dataset, dataset_pct, graph, graph, include_complex=train_complex)
+    tdata = get_train_eval_inclusion_data(dataset, dataset_pct, graph, graph, include_complex=train_complex, skip_ea=True)
     print('complete.')
     training_set = tdata['orig']['triples']
     testing_set = tdata['eval']['triples']
