@@ -31,7 +31,7 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATE_DEVICE,
         
     model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
-    if args.train_complex:
+    if train_complex:
         savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best/train_complex'
         savedir_results = f'data/{dataset}/{dataset_pct}/complex_results/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best/train_complex'
     else:
