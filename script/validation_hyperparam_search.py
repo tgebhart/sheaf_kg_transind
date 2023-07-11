@@ -6,7 +6,7 @@ from pykeen.hpo import hpo_pipeline_from_config
 from data_tools import get_train_eval_inclusion_data, split_mapped_triples, load_hpo_config, get_model_name_from_config
 
 DATASET = 'fb15k-237'
-HPO_CONFIG_NAME = 'transe_hpo_config'
+HPO_CONFIG_NAME = 'se_hpo'
 DATASET_PCT = 175
 GRAPH = 'train'
 

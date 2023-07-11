@@ -11,7 +11,7 @@ from extension import get_extender, diffuse_interior
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-HPO_CONFIG_NAME = 'transe_hpo_config'
+HPO_CONFIG_NAME = 'se_hpo'
 EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'

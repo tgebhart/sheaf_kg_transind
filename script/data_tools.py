@@ -10,6 +10,7 @@ from pykeen.triples import TriplesFactory
 from pykeen.datasets.inductive import InductiveFB15k237, InductiveWN18RR, InductiveNELL
 
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
+from models import SE
 
 BASE_DATA_PATH = 'data'
 BASE_CONFIG_PATH = 'config/ablation'
@@ -252,17 +253,22 @@ def split_mapped_triples(triples_factory, train_pct=0.85):
     eval = triples_factory.clone_and_exchange_triples(eval_triples)
     return train, eval
 
-def load_hpo_config(hpo_config_name: str) -> dict:
+def load_hpo_config(hpo_config_name: str, load: bool = True) -> dict:
     hpo_config_fname = hpo_config_name if '.json' in hpo_config_name else f'{hpo_config_name}.json'
     hpo_config_loc = os.path.join(os.path.join(BASE_CONFIG_PATH, hpo_config_fname))
     with open(hpo_config_loc, 'r') as f:
         config = json.load(f)
+    
+    if load and config['pipeline']['model'] == 'se':
+        # load model 
+        config['pipeline']['model'] = SE
+        
     return config
 
 def get_model_name_from_config(hpo_config_name: str) -> str:
     if '.json' in hpo_config_name:
         hpo_config_name = hpo_config_name[:hpo_config_name.find('.json')]
-    config = load_hpo_config(hpo_config_name)
+    config = load_hpo_config(hpo_config_name, load=False)
     return config['pipeline']['model'].lower(), hpo_config_name
 
 def get_disjoint_dataset(dataset, version, create_inverse_triples=False):

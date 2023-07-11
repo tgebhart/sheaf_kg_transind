@@ -16,7 +16,7 @@ from complex_data_info import QUERY_STRUCTURES
 
 
 DATASET = 'fb15k-237'
-HPO_CONFIG_NAME = 'transe_hpo_config'
+HPO_CONFIG_NAME = 'se_hpo'
 DATASET_PCT = 175
 GRAPH = 'train'
 EVAL_GRAPH = 'valid'
