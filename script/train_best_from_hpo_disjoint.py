@@ -3,7 +3,7 @@ import argparse
 import json
 
 from pykeen.pipeline import pipeline_from_config
-from data_tools import get_eval_graph, get_model_name_from_config, get_disjoint_dataset
+from data_tools import get_eval_graph, get_model_name_from_config, get_disjoint_dataset, load_best_config
 
 DATASET = 'InductiveFB15k237'
 HPO_CONFIG_NAME = 'se_hpo_extension_disjoint'
@@ -13,8 +13,7 @@ EVAL_GRAPH = 'valid'
 
 def train_model(training_set, testing_set, best_hpo_loc, savedir):
 
-    with open(best_hpo_loc, 'r') as f:
-        config = json.load(f)
+    load_best_config(best_hpo_loc)
     config['pipeline']['training'] = training_set
     config['pipeline']['validation'] = testing_set
     config['pipeline']['testing'] = testing_set

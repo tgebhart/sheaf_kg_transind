@@ -10,7 +10,7 @@ from pykeen.pipeline import pipeline_from_config
 from pykeen.sampling import BasicNegativeSampler
 from pykeen.losses import MarginRankingLoss
 
-from data_tools import get_train_eval_inclusion_data, get_model_name_from_config, load_hpo_config
+from data_tools import get_train_eval_inclusion_data, get_model_name_from_config, load_best_config
 from complex_extension import get_complex_extender
 from complex_data_info import QUERY_STRUCTURES
 
@@ -26,8 +26,7 @@ COMPLEX_BATCH_SIZE = 128
 
 def train_model(training_set, testing_set, best_hpo_loc, savedir):
 
-    with open(best_hpo_loc, 'r') as f:
-        config = json.load(f)
+    config = load_best_config(best_hpo_loc)
     config['pipeline']['training'] = training_set
     config['pipeline']['validation'] = testing_set
     config['pipeline']['testing'] = testing_set

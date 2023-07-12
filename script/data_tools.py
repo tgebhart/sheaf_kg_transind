@@ -265,6 +265,16 @@ def load_hpo_config(hpo_config_name: str, load: bool = True) -> dict:
         
     return config
 
+def load_best_config(hpo_config_loc: str, load: bool = True) -> dict:
+    with open(hpo_config_loc, 'r') as f:
+        config = json.load(f)
+    
+    if load and config['pipeline']['model'] == 'se':
+        # load model 
+        config['pipeline']['model'] = SE
+        
+    return config
+
 def get_model_name_from_config(hpo_config_name: str) -> str:
     if '.json' in hpo_config_name:
         hpo_config_name = hpo_config_name[:hpo_config_name.find('.json')]
