@@ -105,10 +105,11 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
 
             try:
                 xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
-            except torch.cuda.OutOfMemoryError as e:
-                diffusion_batch_size = diffusion_batch_size // 10
-                print(f'setting batch size to {diffusion_batch_size}')
-                xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
+            except RuntimeError as e:
+                if 'out of memory' in str(e):
+                    diffusion_batch_size = diffusion_batch_size // 10
+                    print(f'setting batch size to {diffusion_batch_size}')
+                    xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
 
             if iteration in eval_iterations:
 

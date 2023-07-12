@@ -13,7 +13,7 @@ EVAL_GRAPH = 'valid'
 
 def train_model(training_set, testing_set, best_hpo_loc, savedir):
 
-    load_best_config(best_hpo_loc)
+    config = load_best_config(best_hpo_loc)
     config['pipeline']['training'] = training_set
     config['pipeline']['validation'] = testing_set
     config['pipeline']['testing'] = testing_set
