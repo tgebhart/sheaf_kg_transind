@@ -6,11 +6,12 @@ from torch_scatter import scatter
 from torch_geometric.utils import degree, k_hop_subgraph
 import scipy.sparse as sps
 from pykeen.models.nbase import ERModel
-from pykeen.models.unimodal.structured_embedding import SE
 from pykeen.models.unimodal.trans_e import TransE
 from pykeen.models.unimodal.trans_r import TransR
 from pykeen.models.unimodal.rotate import RotatE
 from pykeen.utils import clamp_norm
+
+from models import SE
 
 ALPHA = 1e-1
 
