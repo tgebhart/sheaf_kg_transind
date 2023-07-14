@@ -122,6 +122,7 @@ def run(hpo_config_name, dataset_name, version, diffusion_batch_size=None):
     best_config = study.best_trial.user_attrs['trial_config']
     # remove training triples
     best_config['pipeline'] = {k:v for k,v in best_config['pipeline'].items() if (k not in ('training','validation','testing')) and ('_ranges' not in k)}
+    best_config['pipeline']['model'] = model_name # in case custom model
     
     savedir = f'data/{dataset_name}/{version}/models/train/{model_name}/ablation/{hpo_config_name}/best_pipeline'
     if not os.path.exists(savedir):
