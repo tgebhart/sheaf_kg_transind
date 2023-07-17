@@ -1,7 +1,7 @@
 {
-  "metadata": {
-    "version": "1.10.1"
-  },
+    "metadata": {
+      "version": "1.10.0"
+    },
     "pipeline": {
       "evaluation_kwargs": {
         "batch_size": null
@@ -11,30 +11,29 @@
         "filtered": true
       },
       "filter_validation_when_testing": true,
-      "loss": "nssa",
+      "loss": "marginranking",
       "loss_kwargs": {
-        "adversarial_temperature": 0.2,
-        "margin": 13.0
+        "margin": 2.374516414566151
       },
-      "model": "se",
+      "model": "rotate",
       "model_kwargs": {
-        "embedding_dim": 128,
-        "scoring_fct_norm": 2
+        "embedding_dim": 512
       },
       "negative_sampler": "basic",
       "negative_sampler_kwargs": {
-        "num_negs_per_pos": 20
+        "num_negs_per_pos": 32
       },
       "optimizer": "adam",
       "optimizer_kwargs": {
-        "lr": 0.017039091319412877,
+        "lr": 0.014542044326710978,
         "weight_decay": 0.0
       },
+      "regularizer": "no",
       "training_kwargs": {
         "batch_size": null,
         "label_smoothing": 0.0,
         "num_epochs": 500
       },
-      "training_loop": "slcwa"    
+      "training_loop": "slcwa"
     }
   }

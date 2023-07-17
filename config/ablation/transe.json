@@ -1,7 +1,7 @@
 {
-  "metadata": {
-    "version": "1.10.1"
-  },
+    "metadata": {
+      "version": "1.10.0"
+    },
     "pipeline": {
       "evaluation_kwargs": {
         "batch_size": null
@@ -11,30 +11,23 @@
         "filtered": true
       },
       "filter_validation_when_testing": true,
-      "loss": "nssa",
-      "loss_kwargs": {
-        "adversarial_temperature": 0.2,
-        "margin": 13.0
-      },
-      "model": "se",
+      "loss": "crossentropy",
+      "model": "transe",
       "model_kwargs": {
-        "embedding_dim": 128,
+        "embedding_dim": 256,
         "scoring_fct_norm": 2
-      },
-      "negative_sampler": "basic",
-      "negative_sampler_kwargs": {
-        "num_negs_per_pos": 20
       },
       "optimizer": "adam",
       "optimizer_kwargs": {
-        "lr": 0.017039091319412877,
+        "lr": 0.04515146585935052,
         "weight_decay": 0.0
       },
+      "regularizer": "no",
       "training_kwargs": {
         "batch_size": null,
-        "label_smoothing": 0.0,
+        "label_smoothing": 0.8051688294595359,
         "num_epochs": 500
       },
-      "training_loop": "slcwa"    
+      "training_loop": "lcwa"
     }
   }
