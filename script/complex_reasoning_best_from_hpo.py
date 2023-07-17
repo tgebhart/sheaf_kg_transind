@@ -129,5 +129,5 @@ if __name__ == '__main__':
 
     run(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, 
-        evaluation_batch_size=args.batch_size, evaluation_batch_size=args.slice_size,
+        evaluation_batch_size=args.batch_size, evaluation_slice_size=args.slice_size,
         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, train_complex=args.train_complex)
