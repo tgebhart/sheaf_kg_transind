@@ -4,6 +4,7 @@ DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
 HPO_CONFIG_NAME = 'transe_hpo_config'
 EVALUATION_BATCH_SIZE = 32
+EVALUATION_SLICE_SIZE = None
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
@@ -42,6 +43,8 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
+    training_args.add_argument('--slice-size', type=int, default=EVALUATION_SLICE_SIZE,
+                        help='evaluation slice size')
     training_args.add_argument('--alpha', type=float, default=ALPHA,
                         help='diffusion learning rate (h)')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
@@ -79,9 +82,10 @@ if __name__ == '__main__':
     
     print(f'{strblock} Complex Queries Best {strblock}')
     reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
-         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations,
-         train_complex=False)
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph,
+        evaluation_batch_size=args.batch_size, evaluation_slice_size=args.slice_size,
+        alpha=args.alpha, diffusion_iterations=args.diffusion_iterations,
+        train_complex=False)
     
     if args.train_complex:
         print(f'{strblock} Extending Best {strblock}')
@@ -92,6 +96,7 @@ if __name__ == '__main__':
     
         print(f'{strblock} Complex Queries Best {strblock}')
         reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
-            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size,
+            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph,
+            evaluation_batch_size=args.batch_size, evaluation_slice_size=args.slice_size,
             alpha=args.alpha, diffusion_iterations=args.diffusion_iterations,
             train_complex=True)

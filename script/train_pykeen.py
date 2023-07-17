@@ -3,12 +3,13 @@ import argparse
 
 from pykeen.pipeline import pipeline
 from data_tools import get_train_eval_inclusion_data
+from models import SE
 
 DATASET = 'fb15k-237'
 MODEL = 'se'
 NUM_EPOCHS = 25
-C0_DIM = 32
-C1_DIM = 32
+C0_DIM = 128
+C1_DIM = 128
 RANDOM_SEED = 134
 DATASET_PCT = 175
 GRAPH = 'train'
@@ -24,20 +25,24 @@ def run(model, dataset, num_epochs, random_seed,
     training_set = rdata['orig']['triples']
     testing_set = rdata['eval']['triples']
     
+    model_input = model
     model_kwargs = {'embedding_dim': embedding_dim, 'scoring_fct_norm': 2}
     if model == 'rotate':
         model_kwargs = {'embedding_dim': embedding_dim}    
     if model == 'transr':
         model_kwargs['relation_dim'] = c1_dimension
+    if model == 'se':
+        model_input = SE
     training_kwargs = {'batch_size': 512, 'num_epochs':num_epochs}
     negative_sampler = 'basic'
-    negative_sampler_kwargs = {'num_negs_per_pos': 66}
+    negative_sampler_kwargs = {'num_negs_per_pos': 12}
     loss = 'marginrankingloss'
     optimizer = 'adam'
     optimizer_kwargs = {'lr': 0.0048731266, 'weight_decay': 0}
+    evaluation_kwargs = {'batch_size': 128}
 
     result = pipeline(
-        model=model,
+        model=model_input,
         training=training_set,
         testing=testing_set,
         device=train_device,
@@ -52,7 +57,7 @@ def run(model, dataset, num_epochs, random_seed,
         
         negative_sampler=negative_sampler, 
         negative_sampler_kwargs=negative_sampler_kwargs,
-        evaluation_kwargs={'batch_size': 512}
+        evaluation_kwargs=evaluation_kwargs
         
     )
 

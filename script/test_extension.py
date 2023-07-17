@@ -14,10 +14,9 @@ DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
 MODEL = 'se'
 NUM_EPOCHS = 25
-C0_DIM = 32
-C1_DIM = 32
+C0_DIM = 128
+C1_DIM = 128
 RANDOM_SEED = 134
-TRAINING_BATCH_SIZE = 64
 EVALUATION_BATCH_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
@@ -25,18 +24,19 @@ EVAL_GRAPH = 'valid'
 FROM_SAVE = True
 
 CONVERGENCE_TOL = 1e-4
-DIFFUSION_ITERATIONS = 5000
-EVAL_EVERY = 500
+DIFFUSION_ITERATIONS = 50
+EVAL_EVERY = 10
 ALPHA = 1e-1
+DIFFUSION_BATCH_SIZE = 96
     
 def run(model, dataset, num_epochs, random_seed, 
-        embedding_dim, c1_dimension=None, evaluate_device = 'cpu', 
+        embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
-        diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE, diffusion_batch_size=None,
+        diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE, diffusion_batch_size=DIFFUSION_BATCH_SIZE,
         from_save=FROM_SAVE, alpha=ALPHA, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
-    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
-    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
+    orig_savedir = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
+    eval_savedir = f'data/{dataset}/{dataset_pct}/models/development/{eval_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
     saveloc = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
@@ -101,10 +101,10 @@ def run(model, dataset, num_epochs, random_seed,
 
         extender = get_extender(model)(model=orig_model, alpha=alpha)
 
-        print('extending interior')
-        xU = extend_interior(extender, eval_graph.mapped_triples, interior_mask)
-        print('extended')
-        print(xU)
+        # print('extending interior')
+        # xU = extend_interior(extender, eval_graph.mapped_triples, interior_mask)
+        # print('extended')
+        # print(xU)
         res_df = []
         for iteration in tqdm(range(diffusion_iterations)):
             xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
                         help='diffusion learning rate (h)')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
-    training_args.add_argument('--diffusion-batch-size', type=int, default=None,
+    training_args.add_argument('--diffusion-batch-size', type=int, default=DIFFUSION_BATCH_SIZE,
                         help='diffusion batch size')
     training_args.add_argument('--eval-every', type=int, default=EVAL_EVERY,
                         help='number of diffusion steps to take between each evaluation')
@@ -188,11 +188,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # run(args.model, args.dataset, args.num_epochs, args.random_seed,
-    #     args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
-    #     orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
-    #      alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)
     run(args.model, args.dataset, args.num_epochs, args.random_seed,
         args.embedding_dim, c1_dimension=args.c1_dimension, dataset_pct=args.dataset_pct, 
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=100000,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
          alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

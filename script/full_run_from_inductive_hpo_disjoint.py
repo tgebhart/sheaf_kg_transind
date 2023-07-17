@@ -5,6 +5,7 @@ DATASET = 'InductiveFB15k237'
 BASE_DATA_PATH = 'data'
 HPO_CONFIG_NAME = 'se_hpo_disjoint'
 EVALUATION_BATCH_SIZE = 32
+EVALUATION_SLICE_SIZE = None
 VERSION = 'v1'
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
@@ -41,6 +42,8 @@ if __name__ == '__main__':
                         help='inductive graph to test on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
+    training_args.add_argument('--slice-size', type=int, default=EVALUATION_SLICE_SIZE,
+                        help='evaluation slice size')
     training_args.add_argument('--diffusion-iterations', type=int, default=DIFFUSION_ITERATIONS,
                         help='number of diffusion steps')
     training_args.add_argument('--diffusion-batch-size', type=int, default=None,

@@ -29,19 +29,29 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
         alpha=ALPHA, dataset_pct=DATASET_PCT, 
         orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS,
         diffusion_batch_size=None, evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL,
-        train_complex=TRAIN_COMPLEX):
+        train_complex=TRAIN_COMPLEX, development=False):
 
     model, hpo_config_name = get_model_name_from_config(hpo_config_name)
 
-    orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{hpo_config_name}/hpo_best'
-    eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
-
-    if train_complex:
-        savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}/{hpo_config_name}/train_complex'
-        savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best/train_complex'
+    if development:
+        orig_savedir = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{hpo_config_name}'
+        eval_savedir = f'data/{dataset}/{dataset_pct}/models/development/{eval_graph_type}/{model}/{hpo_config_name}'
+        if train_complex:
+            savedir_results = f'data/{dataset}/{dataset_pct}/development/extension_results/{eval_graph_type}/{model}/{hpo_config_name}/train_complex'
+            savedir_model = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/train_complex'
+        else:
+            savedir_results = f'data/{dataset}/{dataset_pct}/development/extension_results/{eval_graph_type}/{model}/{hpo_config_name}'
+            savedir_model = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}'
     else:
-        savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}/{hpo_config_name}'
-        savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
+        orig_savedir = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}/{model}/{hpo_config_name}/hpo_best'
+        eval_savedir = f'data/{dataset}/{dataset_pct}/models/{eval_graph_type}/{model}/{hpo_config_name}/hpo_best'
+
+        if train_complex:
+            savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}/{hpo_config_name}/train_complex'
+            savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best/train_complex'
+        else:
+            savedir_results = f'data/{dataset}/{dataset_pct}/extension_results/hpo_best/{eval_graph_type}/{model}/{hpo_config_name}'
+            savedir_model = f'data/{dataset}/{dataset_pct}/models/{orig_graph_type}-{eval_graph_type}_extended/{model}/{hpo_config_name}/hpo_best'
 
     savename_model = f'complex_trained_model.pkl' if train_complex else 'trained_model.pkl'
 
@@ -107,7 +117,8 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                 xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
             except RuntimeError as e:
                 if 'out of memory' in str(e):
-                    diffusion_batch_size = diffusion_batch_size // 10
+                    diffusion_batch_size = (diffusion_batch_size // 10 if diffusion_batch_size is not None
+                                            else eval_graph.mapped_triples.shape[0] // 10)
                     print(f'setting batch size to {diffusion_batch_size}')
                     xU = diffuse_interior(extender, eval_graph.mapped_triples, interior_mask, batch_size=diffusion_batch_size)
 

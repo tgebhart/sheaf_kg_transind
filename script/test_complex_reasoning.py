@@ -13,27 +13,28 @@ from complex_data_info import QUERY_STRUCTURES
 
 DATASET = 'fb15k-237'
 BASE_DATA_PATH = 'data'
-MODEL = 'transe'
+MODEL = 'se'
 NUM_EPOCHS = 25
-C0_DIM = 32
-C1_DIM = 32
+C0_DIM = 128
+C1_DIM = 128
 RANDOM_SEED = 134
 TRAINING_BATCH_SIZE = 64
-EVALUATION_BATCH_SIZE = 32
+EVALUATION_BATCH_SIZE = 200
+EVALUATION_SLICE_SIZE = 512
 DATASET_PCT = 175
 ORIG_GRAPH = 'train'
 EVAL_GRAPH = 'valid'
-FROM_SAVE = True
 
 CONVERGENCE_TOL = 1e-4
-DIFFUSION_ITERATIONS = 5000
+DIFFUSION_ITERATIONS = 50
 ALPHA = 1e-1
     
 def run(model, dataset, num_epochs, random_seed, 
         embedding_dim, c1_dimension=None, evaluate_device = 'cuda', 
         dataset_pct=DATASET_PCT, orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH,
         diffusion_iterations=DIFFUSION_ITERATIONS, evaluation_batch_size=EVALUATION_BATCH_SIZE,
-        from_save=FROM_SAVE, alpha=ALPHA, convergence_tol=CONVERGENCE_TOL, query_structures=QUERY_STRUCTURES):
+        evaluation_slice_size=EVALUATION_SLICE_SIZE, alpha=ALPHA, 
+        convergence_tol=CONVERGENCE_TOL, query_structures=QUERY_STRUCTURES):
 
     saveloc = f'data/{dataset}/{dataset_pct}/models/development/{orig_graph_type}/{model}/{random_seed}seed_{embedding_dim}C0_{c1_dimension}C1_{num_epochs}epochs'
 
@@ -58,7 +59,7 @@ def run(model, dataset, num_epochs, random_seed,
             print(f'scoring query structure {query_structure}')
 
             queries = rdata['complex'][query_structure]
-            scores = extender.slice_and_score_complex(query_structure, queries, evaluation_batch_size)
+            scores = extender.slice_and_score_complex(query_structure, queries, evaluation_batch_size, slice_size=evaluation_slice_size)
             
             for qix in tqdm(range(len(queries)), desc='evaluation'):
                 q = queries[qix]

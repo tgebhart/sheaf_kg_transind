@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "version": "1.10.1"
+  },
+    "pipeline": {
+      "evaluation_kwargs": {
+        "batch_size": null
+      },
+      "evaluator": "rankbased",
+      "evaluator_kwargs": {
+        "filtered": true
+      },
+      "filter_validation_when_testing": true,
+      "loss": "nssa",
+      "loss_kwargs": {
+        "adversarial_temperature": 0.2,
+        "margin": 13.0
+      },
+      "model": "se",
+      "model_kwargs": {
+        "embedding_dim": 128,
+        "scoring_fct_norm": 2
+      },
+      "negative_sampler": "basic",
+      "negative_sampler_kwargs": {
+        "num_negs_per_pos": 20
+      },
+      "optimizer": "adam",
+      "optimizer_kwargs": {
+        "lr": 0.017039091319412877,
+        "weight_decay": 0.0
+      },
+      "training_kwargs": {
+        "batch_size": null,
+        "label_smoothing": 0.0,
+        "num_epochs": 5
+      },
+      "training_loop": "slcwa"    
+    }
+  }
