@@ -12,7 +12,7 @@ from pykeen.losses import MarginRankingLoss
 
 from data_tools import get_train_eval_inclusion_data, get_model_name_from_config, load_best_config
 from complex_extension import get_complex_extender
-from complex_data_info import QUERY_STRUCTURES
+from complex_data_info import TRAINING_QUERY_STRUCTURES
 
 
 DATASET = 'fb15k-237'
@@ -78,7 +78,7 @@ def attempt_infer_best_hyperparams(best_hpo_loc):
             r['lr'] = pc['optimizer_kwargs'].get('lr', None)
     return r
 
-def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_structures=QUERY_STRUCTURES,
+def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_structures=TRAINING_QUERY_STRUCTURES,
                   complex_epochs=COMPLEX_EPOCHS, complex_batch_size=COMPLEX_BATCH_SIZE):
     
     extender = get_complex_extender(model)(model=train_model)
@@ -129,7 +129,7 @@ def train_complex_loop(model, train_model, rdata, best_hpo_loc, savedir, query_s
     torch.save(train_model, os.path.join(savedir, 'complex_trained_model.pkl'))
 
 def run(config_name, dataset, dataset_pct=DATASET_PCT, graph=GRAPH, eval_graph=EVAL_GRAPH,
-        train_complex=TRAIN_COMPLEX, query_structures=QUERY_STRUCTURES,
+        train_complex=TRAIN_COMPLEX, query_structures=TRAINING_QUERY_STRUCTURES,
         complex_epochs=COMPLEX_EPOCHS, complex_batch_size=COMPLEX_BATCH_SIZE):
 
     model, config_name = get_model_name_from_config(config_name)

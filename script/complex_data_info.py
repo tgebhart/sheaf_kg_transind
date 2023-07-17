@@ -1,5 +1,6 @@
 
 QUERY_STRUCTURES = ['1p','2p','3p','2i','3i','pi','ip']
+TRAINING_QUERY_STRUCTURES = ['2p','3p','pi','ip']
 
 query_name_dict = {('e',('r',)): '1p', 
                     ('e', ('r', 'r')): '2p',
