@@ -14,7 +14,7 @@
       "loss": "crossentropy",
       "model": "transe",
       "model_kwargs": {
-        "embedding_dim": 256,
+        "embedding_dim": 512,
         "scoring_fct_norm": 2
       },
       "optimizer": "adam",
