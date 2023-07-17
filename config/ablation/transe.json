@@ -11,11 +11,18 @@
         "filtered": true
       },
       "filter_validation_when_testing": true,
-      "loss": "crossentropy",
+      "loss": "marginrankingloss",
+      "loss_kwargs": {
+        "margin": 8.0
+      },
       "model": "transe",
       "model_kwargs": {
         "embedding_dim": 512,
         "scoring_fct_norm": 2
+      },
+      "negative_sampler": "basic",
+      "negative_sampler_kwargs": {
+        "num_negs_per_pos": 66
       },
       "optimizer": "adam",
       "optimizer_kwargs": {
@@ -28,6 +35,6 @@
         "label_smoothing": 0.8051688294595359,
         "num_epochs": 200
       },
-      "training_loop": "lcwa"
+      "training_loop": "slcwa"
     }
   }
