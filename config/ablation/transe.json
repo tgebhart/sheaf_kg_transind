@@ -32,7 +32,6 @@
       "regularizer": "no",
       "training_kwargs": {
         "batch_size": null,
-        "label_smoothing": 0.8051688294595359,
         "num_epochs": 200
       },
       "training_loop": "slcwa"
