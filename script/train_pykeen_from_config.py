@@ -70,7 +70,7 @@ def attempt_infer_best_hyperparams(best_hpo_loc):
          'lr':None}
     if 'pipeline' in config:
         pc = config['pipeline']
-        if 'loss_kwargs' in pc and pc['loss'] == 'marginranking':
+        if 'loss_kwargs' in pc and 'marginranking' in pc['loss']:
             r['margin'] = pc['loss_kwargs'].get('margin', None)
         if 'negative_sampler_kwargs' in pc and pc['negative_sampler'] == 'basic':
             r['num_negs_per_pos'] = pc['negative_sampler_kwargs'].get('num_negs_per_pos', None)
