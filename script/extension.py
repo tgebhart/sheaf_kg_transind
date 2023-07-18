@@ -15,14 +15,26 @@ from models import SE
 
 ALPHA = 1e-1
 
-def coboundary(edge_index,Fh,Ft,relabel=False):
+def coboundary(edge_index: torch.Tensor,Fh: torch.Tensor,Ft: torch.Tensor,relabel=False) -> torch.Tensor:
+    """Computes the coboundary matrix of the embedding of the
+    relation? 
+
+    Args:
+        edge_index (_type_): TODO: what is the shape of this? What actually is it? 
+        Fh (torch.Tensor): restriction map from h -> e
+        Ft (torch.Tensor): restriction map from t -> e
+        relabel (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        _type_: torch.Tensor
+    """
     device = Fh.device
     if relabel:
         _, edge_index = torch.unique(edge_index, sorted=True, return_inverse=True)
-    ne = edge_index.shape[-1]
-    nv = edge_index.max() + 1
-    de = Fh.shape[-2]
-    dv = Fh.shape[-1]
+    ne = edge_index.shape[-1] # num of edges
+    nv = edge_index.max() + 1 # num of vertices 
+    de = Fh.shape[-2] # dim of edge space
+    dv = Fh.shape[-1] # dim of vertex space
     idxs = []
     vals = torch.zeros(0, device=device)
     for e in range(ne):
@@ -32,7 +44,10 @@ def coboundary(edge_index,Fh,Ft,relabel=False):
         idxs += list(product(r, list(range(h*dv,(h+1)*dv)))) + \
               list(product(r, list(range(t*dv,(t+1)*dv))))
         vals = torch.cat((vals, Fh[e,:,:].flatten(), -Ft[e,:,:].flatten()))
+        # whoa ok so here ^^ we're stacking the the restriction maps, but 
+        # switching the 'orientation' of the map t --> e
     return torch.sparse_coo_tensor(torch.LongTensor(idxs).T, vals, size=(ne*de,nv*dv), device=device)
+        # this ^^ allows us to specify the non-zero entries of the result that we want to populate with vals
 
 def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
     edge_index = triples[:,[0,2]].T
