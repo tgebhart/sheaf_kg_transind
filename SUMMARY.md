@@ -2,7 +2,7 @@
 
 ## 7/17: 
 * so far I have checked out **coboundary** in extension.py, and have tracked down where this is used. The coboundary function takes as input the **restriction maps**, something called the **edge_index** (figure out what this is!), and an optional param for relabeling (not sure what this is for, but seems less important than the others), and produces the coboundary matrix mapping between the vertex space and the edge space of the relation (**TODO**: sanity check with dimensions. Is this right?)
-* * Main calculation I don't understand is the construction of the indices of non-zero values. Look @ the paper for this + write out some simple examples by hand.
+    * Main calculation I don't understand is the construction of the indices of non-zero values. Look @ the paper for this + write out some simple examples by hand.
 
 * I looked at KGExtender, the base class for
 sheaf-based kg embedding. This doesn't implement the full range of assumed methods, so I looked at SEEmbedding, which seems to be the simplest KG embedding approach. 
