@@ -7,7 +7,7 @@
 * I looked at KGExtender, the base class for
 sheaf-based kg embedding. This doesn't implement the full range of assumed methods, so I looked at SEEmbedding, which seems to be the simplest KG embedding approach. 
 * the basic usage of models that subclass KGExtender is as follows: 
-* select optimal hyperparameters
+    * select optimal hyperparameters
     * do training with ^^ on some knowledge graph G
     * given new pieces of the graph that we don't know, diffuse the embeddings from known edges/vertices to the unfamiliar parts by iteratively applying the sheaf laplacian.
 
