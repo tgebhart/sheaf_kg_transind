@@ -1,15 +1,13 @@
 from typing import Any, ClassVar, Mapping, Optional
 
 from class_resolver import Hint
-from torch.nn import functional
-
-from pykeen.models import ERModel
 from pykeen.constants import DEFAULT_EMBEDDING_HPO_EMBEDDING_DIM_RANGE
+from pykeen.models import ERModel
 from pykeen.nn.init import xavier_uniform_, xavier_uniform_norm_
 from pykeen.nn.modules import SEInteraction
 from pykeen.typing import Constrainer, Initializer
 from pykeen.utils import clamp_norm
-
+from torch.nn import functional
 
 __all__ = [
     "SE",
@@ -84,13 +82,13 @@ class SE(ERModel):
                     shape=(embedding_dim, embedding_dim),
                     initializer=relation_initializer,
                     constrainer=relation_constrainer,
-                    constrainer_kwargs=dict(maxnorm=1.0, p=2, dim=-1)
+                    constrainer_kwargs=dict(maxnorm=1.0, p=2, dim=-1),
                 ),
                 dict(
                     shape=(embedding_dim, embedding_dim),
                     initializer=relation_initializer,
                     constrainer=relation_constrainer,
-                    constrainer_kwargs=dict(maxnorm=1.0, p=2, dim=-1)
+                    constrainer_kwargs=dict(maxnorm=1.0, p=2, dim=-1),
                 ),
             ],
             **kwargs,
