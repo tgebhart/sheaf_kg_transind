@@ -10,30 +10,24 @@
       "evaluator_kwargs": {
         "filtered": true
       },
-      "filter_validation_when_testing": true,
-      "loss": "marginrankingloss",
-      "loss_kwargs": {
-        "margin": 8.0
-      },
+      "loss": "crossentropy",
       "model": "transe",
       "model_kwargs": {
-        "embedding_dim": 512,
-        "scoring_fct_norm": 2
-      },
-      "negative_sampler": "basic",
-      "negative_sampler_kwargs": {
-        "num_negs_per_pos": 66
+        "automatic_memory_optimization": true,
+        "embedding_dim": 64,
+        "scoring_fct_norm": 1
       },
       "optimizer": "adam",
       "optimizer_kwargs": {
-        "lr": 0.04515146585935052,
+        "lr": 0.0016608460884079603,
         "weight_decay": 0.0
       },
       "regularizer": "no",
       "training_kwargs": {
-        "batch_size": null,
-        "num_epochs": 200
+        "batch_size": 256,
+        "label_smoothing": 0.717650072390557,
+        "num_epochs": 201
       },
-      "training_loop": "slcwa"
+      "training_loop": "lcwa"
     }
   }
