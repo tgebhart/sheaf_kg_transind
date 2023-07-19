@@ -11,29 +11,31 @@
         "filtered": true
       },
       "filter_validation_when_testing": true,
-      "loss": "marginranking",
+      "loss": "nssa",
       "loss_kwargs": {
-        "margin": 2.374516414566151
+        "adversarial_temperature": 0.9053291478133825,
+        "margin": 27.868096306273824
       },
       "model": "rotate",
       "model_kwargs": {
-        "embedding_dim": 512
+        "automatic_memory_optimization": true,
+        "embedding_dim": 128
       },
       "negative_sampler": "basic",
       "negative_sampler_kwargs": {
-        "num_negs_per_pos": 32
+        "num_negs_per_pos": 79
       },
       "optimizer": "adam",
       "optimizer_kwargs": {
-        "lr": 0.014542044326710978,
+        "lr": 0.002750349821235516,
         "weight_decay": 0.0
       },
       "regularizer": "no",
       "training_kwargs": {
-        "batch_size": null,
+        "batch_size": 512,
         "label_smoothing": 0.0,
-        "num_epochs": 500
+        "num_epochs": 301
       },
-      "training_loop": "slcwa"
+      "training_loop": "sLCWA"
     }
   }
