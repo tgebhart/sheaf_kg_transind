@@ -29,7 +29,6 @@
         "lr": 0.002750349821235516,
         "weight_decay": 0.0
       },
-      "regularizer": "no",
       "training_kwargs": {
         "batch_size": 512,
         "label_smoothing": 0.0,
