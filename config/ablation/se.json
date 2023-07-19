@@ -18,7 +18,7 @@
       },
       "model": "se",
       "model_kwargs": {
-        "embedding_dim": 128,
+        "embedding_dim": 8,
         "scoring_fct_norm": 2
       },
       "negative_sampler": "basic",
