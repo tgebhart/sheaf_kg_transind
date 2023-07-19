@@ -17,7 +17,7 @@
       "adversarial_temperature": 0.31123523707081635,
       "margin": 12.163064261250847
     },
-    "model": "structuredembedding",
+    "model": "se",
     "model_kwargs": {
       "automatic_memory_optimization": true,
       "embedding_dim": 256,
