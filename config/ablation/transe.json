@@ -13,7 +13,6 @@
       "loss": "crossentropy",
       "model": "transe",
       "model_kwargs": {
-        "automatic_memory_optimization": true,
         "embedding_dim": 64,
         "scoring_fct_norm": 1
       },

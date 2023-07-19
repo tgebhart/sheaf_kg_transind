@@ -18,7 +18,6 @@
       },
       "model": "rotate",
       "model_kwargs": {
-        "automatic_memory_optimization": true,
         "embedding_dim": 128
       },
       "negative_sampler": "basic",
