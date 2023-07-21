@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Tuple
+from typing import List, Tuple
 
 import scipy.sparse as sps
 import torch
@@ -13,116 +13,6 @@ from torch_geometric.utils import degree, k_hop_subgraph
 from torch_scatter import scatter
 
 ALPHA = 1e-1
-
-
-def coboundary(
-    edge_index: torch.Tensor, Fh: torch.Tensor, Ft: torch.Tensor, relabel=False
-) -> torch.Tensor:
-    """Computes the coboundary matrix of the embedding of the
-    relation?
-
-    Args:
-        edge_index (_type_): TODO: what is the shape of this? What actually is it?
-        Fh (torch.Tensor): restriction map from h -> e
-        Ft (torch.Tensor): restriction map from t -> e
-        relabel (bool, optional): _description_. Defaults to False.
-
-    Returns:
-        _type_: torch.Tensor
-    """
-    device = Fh.device
-    if relabel:
-        _, edge_index = torch.unique(edge_index, sorted=True, return_inverse=True)
-    ne = edge_index.shape[-1]  # num of edges
-    nv = edge_index.max() + 1  # num of vertices
-    de = Fh.shape[-2]  # dim of edge space
-    dv = Fh.shape[-1]  # dim of vertex space
-    idxs = []
-    vals = torch.zeros(0, device=device)
-    for e in range(ne):
-        h = edge_index[0, e]
-        t = edge_index[1, e]
-        r = list(range(e * de, (e + 1) * de))
-        idxs += list(product(r, list(range(h * dv, (h + 1) * dv)))) + list(
-            product(r, list(range(t * dv, (t + 1) * dv)))
-        )
-        vals = torch.cat((vals, Fh[e, :, :].flatten(), -Ft[e, :, :].flatten()))
-        # whoa ok so here ^^ we're stacking the the restriction maps, but
-        # switching the 'orientation' of the map t --> e
-    return torch.sparse_coo_tensor(
-        torch.LongTensor(idxs).T, vals, size=(ne * de, nv * dv), device=device
-    )
-    # this ^^ allows us to specify the non-zero entries of the result that we want to populate with vals
-
-
-def diffuse_interior(diffuser, triples, interior_ent_msk, batch_size=None):
-    edge_index = triples[:, [0, 2]].T
-    relations = triples[:, 1]
-    all_ents = edge_index.flatten().unique()
-    num_nodes = all_ents.size(0)
-    interior_vertices = all_ents[interior_ent_msk]
-
-    if batch_size is None:
-        batch_size = edge_index.shape[1]
-    if batch_size > edge_index.shape[1]:
-        batch_size = edge_index.shape[1]
-
-    degree_normalize = diffuser.degree_normalize
-    # we will normalize after all batches are processed, if required
-    diffuser.degree_normalize = False
-
-    xU = None
-    for bix in range(0, edge_index.shape[1], batch_size):
-        xUb, _ = diffuser.diffuse_interior(
-            edge_index[:, bix : bix + batch_size],
-            relations[bix : bix + batch_size],
-            nv=num_nodes,
-        )
-        if xU is None:
-            xU = xUb
-        else:
-            xU += xUb
-
-    if degree_normalize:
-        degrees = xU.shape[1] * degree(edge_index.flatten().to(diffuser.device))
-        xU = xU / degrees.reshape((-1, 1))
-    diffuser.update_representations(xU, interior_vertices)
-    diffuser.degree_normalize = degree_normalize
-    return xU
-
-
-def extend_interior(extender, triples, interior_ent_msk, batch_size=None):
-    edge_index = triples[:, [0, 2]].T
-    relations = triples[:, 1]
-    all_ents = edge_index.flatten().unique()
-    num_nodes = all_ents.size(0)
-    interior_vertices = all_ents[interior_ent_msk]
-    boundary_vertices = all_ents[~interior_ent_msk]
-
-    interior_interior_msk = torch.isin(
-        edge_index[0, :], interior_vertices
-    ) & torch.isin(edge_index[1, :], interior_vertices)
-    interior_boundary_msk = (
-        torch.isin(edge_index[0, :], interior_vertices)
-        & torch.isin(edge_index[1, :], boundary_vertices)
-    ) | (
-        torch.isin(edge_index[1, :], interior_vertices)
-        & torch.isin(edge_index[0, :], boundary_vertices)
-    )
-
-    if batch_size is None:
-        batch_size = edge_index.shape[1]
-    if batch_size > edge_index.shape[1]:
-        batch_size = edge_index.shape[1]
-
-    xU = extender.harmonic_extension(
-        edge_index,
-        relations,
-        interior_interior_msk,
-        interior_boundary_msk,
-        boundary_vertices,
-    )
-
 
 class KGExtender:
     """Harmonic extension base class."""
@@ -197,6 +87,132 @@ class KGExtender:
         scatter(-x_e_t.squeeze(-1), edge_index_inv[1, :], dim=0, out=Lx)
 
         return Lx
+
+def coboundary(
+    edge_index: torch.Tensor, Fh: torch.Tensor, Ft: torch.Tensor, relabel=False
+) -> torch.Tensor:
+    """Computes the coboundary matrix of the embedding of the
+    relation?
+
+    Args:
+        edge_index (_type_): list representation of a graph. 
+        ex: [[0, 1], [1, 2]].T, where we have vertices 0,1,2 and edges 0-->1-->2 
+        Fh (torch.Tensor): restriction map from h -> e
+        Ft (torch.Tensor): restriction map from t -> e
+        relabel (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        torch.Tensor: the coboundary matrix from C^0 to C^1. 
+    """
+    device = Fh.device
+    if relabel:
+        _, edge_index = torch.unique(edge_index, sorted=True, return_inverse=True)
+    ne = edge_index.shape[-1]  # num of edges
+    nv = edge_index.max() + 1  # num of vertices
+    de = Fh.shape[-2]  # dim of edge space
+    dv = Fh.shape[-1]  # dim of vertex space
+    idxs = []
+    vals = torch.zeros(0, device=device)
+    for e in range(ne):
+        h = edge_index[0, e]
+        t = edge_index[1, e]
+        r = list(range(e * de, (e + 1) * de))
+        idxs += list(product(r, list(range(h * dv, (h + 1) * dv)))) + list(
+            product(r, list(range(t * dv, (t + 1) * dv)))
+        )
+        vals = torch.cat((vals, Fh[e, :, :].flatten(), -Ft[e, :, :].flatten()))
+        # ok so here ^^ we're stacking the restriction maps, but
+        # switching the 'orientation' of the map t --> e
+    return torch.sparse_coo_tensor(
+        torch.LongTensor(idxs).T, vals, size=(ne * de, nv * dv), device=device
+    )
+    # this ^^ allows us to specify the non-zero entries of the result that we want to populate with vals
+
+
+def diffuse_interior(diffuser: KGExtender, triples: List[list], interior_ent_msk: torch.Tensor, batch_size: int = None):
+    """
+        Diffuse by application of the extension model's sheaf
+        Laplacian. The terms 'extender' and 'diffuser' seem to be used interchangeably. 
+
+    Args:
+        diffuser (KGExtender): The extension method to use. 
+        triples (List[list]): a list of entity - relation - entity triples, each of which is also a list. 
+        interior_ent_msk (torch.Tensor): indices of vertices in the interior
+        batch_size (int, optional): Batch size. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
+    edge_index = triples[:, [0, 2]].T
+    relations = triples[:, 1]
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+
+    if batch_size is None:
+        batch_size = edge_index.shape[1]
+    if batch_size > edge_index.shape[1]:
+        batch_size = edge_index.shape[1]
+
+    degree_normalize = diffuser.degree_normalize
+    # we will normalize after all batches are processed, if required
+    diffuser.degree_normalize = False
+
+    xU = None
+    for bix in range(0, edge_index.shape[1], batch_size):
+        # multiply a batch of vertex embeddings by the laplacian
+        xUb, _ = diffuser.diffuse_interior(
+            edge_index[:, bix : bix + batch_size], # edges
+            relations[bix : bix + batch_size], # edge types
+            nv=num_nodes,
+        )
+        if xU is None:
+            xU = xUb
+        else:
+            xU += xUb
+
+    if degree_normalize:
+        degrees = xU.shape[1] * degree(edge_index.flatten().to(diffuser.device))
+        xU = xU / degrees.reshape((-1, 1))
+    diffuser.update_representations(xU, interior_vertices)
+    diffuser.degree_normalize = degree_normalize
+    return xU
+
+
+def extend_interior(extender, triples, interior_ent_msk, batch_size=None):
+    edge_index = triples[:, [0, 2]].T
+    relations = triples[:, 1]
+    all_ents = edge_index.flatten().unique()
+    num_nodes = all_ents.size(0)
+    interior_vertices = all_ents[interior_ent_msk]
+    boundary_vertices = all_ents[~interior_ent_msk]
+
+    interior_interior_msk = torch.isin(
+        edge_index[0, :], interior_vertices
+    ) & torch.isin(edge_index[1, :], interior_vertices)
+    interior_boundary_msk = (
+        torch.isin(edge_index[0, :], interior_vertices)
+        & torch.isin(edge_index[1, :], boundary_vertices)
+    ) | (
+        torch.isin(edge_index[1, :], interior_vertices)
+        & torch.isin(edge_index[0, :], boundary_vertices)
+    )
+
+    if batch_size is None:
+        batch_size = edge_index.shape[1]
+    if batch_size > edge_index.shape[1]:
+        batch_size = edge_index.shape[1]
+
+    xU = extender.harmonic_extension(
+        edge_index,
+        relations,
+        interior_interior_msk,
+        interior_boundary_msk,
+        boundary_vertices,
+    )
+
+
+
 
 
 class SEExtender(KGExtender):

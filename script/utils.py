@@ -1,6 +1,9 @@
 import numpy as np
+from typing import Tuple
 import torch
 from pykeen.nn import Embedding
+from pykeen.models.nbase import ERModel
+
 
 
 def batch_chunk(seq, size):
@@ -8,12 +11,27 @@ def batch_chunk(seq, size):
 
 
 def expand_entity_embeddings(
-    model,
-    boundary_vertices_original,
-    boundary_vertices_extended,
-    num_embeddings_new,
+    model: ERModel,
+    boundary_vertices_original: torch.Tensor,
+    boundary_vertices_extended: torch.Tensor,
+    num_embeddings_new: int,
     dtype=None,
 ):
+    """
+       This function creates a new embedding of the knowledge graph
+       by merging the embeddings for the old entities with new embeddings (untrained)
+       for the unseen entities. 
+
+    Args:
+        model (ERModel): _description_
+        boundary_vertices_original (torch.Tensor): _description_
+        boundary_vertices_extended (torch.Tensor): _description_
+        num_embeddings_new (_type_): Number of embeddings to generate (old + new)
+        dtype (_type_, optional): Datatype of the embeddings. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
     oe = model.entity_representations[0]
     if model._get_name() == "RotatE":
         dtype = torch.cfloat
@@ -32,7 +50,18 @@ def expand_entity_embeddings(
     return model
 
 
-def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph):
+def expand_model_to_inductive_graph(model, entity_inclusion, extended_graph) -> Tuple[ERModel, torch.Tensor]:
+    """_summary_
+
+    Args:
+        model (_type_): _description_
+        entity_inclusion (_type_): _description_
+        extended_graph (_type_): _description_
+
+    Returns:
+        Tuple[ERModel, torch.Tensor]: A pair, consisting of the model with the updated embeddings, 
+        and a tensor with the indices of all "interior" vertices. 
+    """
     triples = extended_graph.mapped_triples
     edge_index = triples[:, [0, 2]].T
     all_ents = edge_index.flatten().unique()

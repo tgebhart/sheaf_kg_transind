@@ -1,3 +1,7 @@
+"""
+    I have absolutely no idea what this is. Ask tom. 
+"""
+
 QUERY_STRUCTURES = ["1p", "2p", "3p", "2i", "3i", "pi", "ip"]
 TRAINING_QUERY_STRUCTURES = ["2p", "3p", "pi", "ip"]
 

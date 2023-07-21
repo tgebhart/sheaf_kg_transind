@@ -14,3 +14,12 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
 * *TODO*: what exactly is harmonic extension lol? is it just the above process? 
 * *TODO*: explore pykeen + run some simple models (ex: SE aka structured Embedding) on some sample data to get a feel for how they work (as well as expected methods/properties). 
 * *TODO*: what does it mean to diffuse the *interior* of something? Find out what this actually means haha
+
+## 7/20: 
+
+* Using full_run_from_inductive_hpo as my starting point, I looked at diffuse_interior in extension.py. 
+    * What defines the interior/boundary? The data, it seems. I wanted to track down where `interior_ent_msk` comes from. 
+
+* I looked at `expand_entity_embeddings` and `expand_model_to_inductive_graph` in utils.py, wrote some doc strings, and added some type hints. These are key functions used in process of extending embeddings to unseen entities. 
+
+* I also looked at complex_data_info.py. Not sure what this is for yet. Too many single-letter variables 😰
