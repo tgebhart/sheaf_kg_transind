@@ -5,18 +5,48 @@ import pickle
 import numpy as np
 import pandas as pd
 import torch
-
-torch.manual_seed(0)
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
 from models import SE
 from pykeen.datasets.inductive import InductiveFB15k237, InductiveNELL, InductiveWN18RR
 from pykeen.triples import TriplesFactory
+from typing import Tuple, Dict, Literal, List
 
 BASE_DATA_PATH = "data"
 BASE_CONFIG_PATH = "config/ablation"
+torch.manual_seed(0)
 
 
-def find_dataset_betae(dataset, pct):
+def find_dataset_betae(dataset: str, pct) -> dict:
+    """
+        Builds a config dictionary of paths to the actual dataset
+        based on the name of the dataset, ex: dataset = fb15k-237. 
+
+        Confusingly, the pct arg doesn't seem to do anything except 
+        change the name of the path? 
+
+        This also assumes that we have the data locally afaict (in a directory named 
+        'data'), which I do not. Ask Tom about this.
+
+    Args:
+        dataset (str): the dataset to load, ex: fb15k-237
+        pct (_type_): _description_
+
+    Returns:
+        dict: Dictionary containing paths to graph, queries, 
+        answers, and difficulties. 
+        ex: {
+            train: {
+                graph: path to graph .txt file, 
+                queries: ..., 
+                answers: {
+                    easy: ...,
+                    hard: ...}
+                }
+            },
+            valid: {...},
+            test: {...}
+        }
+    """
     basepath = f"{BASE_DATA_PATH}/{dataset}/{pct}"
     join = os.path.join
     return {
@@ -50,7 +80,34 @@ def find_dataset_betae(dataset, pct):
     }
 
 
-def create_relation_id_mapping(dstf, relation_col=1, delimiter="\t"):
+def create_relation_id_mapping(dstf: dict, relation_col: int =1, delimiter: str ="\t") -> Dict[str, int]:
+    """
+        Creates a dictionary mapping a relation to a unique index. The first argument is the data 
+        structure outputted by find_dataset_betae. 
+    Args:
+        dstf (dict): The output of find_dataset_betae, i.e. {
+            train: {
+                graph: path to graph .txt file, 
+                queries: ..., 
+                answers: {
+                    easy: ...,
+                    hard: ...}
+                }
+            },
+            valid: {...},
+            test: {...}
+        }
+        relation_col (int, optional): _description_. Defaults to 1.
+        delimiter (str, optional): _description_. Defaults to "\t".
+
+    Returns:
+        Dict[str, int]: Mapping of relation names to their indices, 
+        ex: {
+            "/people/person/profession": 0
+            "/music/artist/origin": 1,
+            ...
+        }
+    """
     print("creating id maps...")
     train = pd.read_csv(dstf["train"]["graph"], delimiter=delimiter, header=None)
     valid = pd.read_csv(dstf["valid"]["graph"], delimiter=delimiter, header=None)
@@ -69,11 +126,23 @@ def create_relation_id_mapping(dstf, relation_col=1, delimiter="\t"):
     return {str(r): ix for ix, r in enumerate(relations)}
 
 
-def get_graphs(dataset, pct, delimiter="\t"):
+def get_graphs(dataset: str, pct: int, delimiter: str ="\t") -> Tuple[TriplesFactory, TriplesFactory, TriplesFactory]:
+    """
+        Parses the dataset into a collection of factories that can produce (entity, relation, entity) 
+        triples for train, validation, and test data sets. 
+
+    Args:
+        dataset (str): name of the dataset
+        pct (int): unknown entity relative percentage
+        delimiter (str, optional): _description_. Defaults to "\t".
+
+    Returns:
+        Tuple[TriplesFactory, TriplesFactory, TriplesFactory]: _description_
+    """
     triples_factory = TriplesFactory
 
-    dstf = find_dataset_betae(dataset, pct)
-    r2id = create_relation_id_mapping(dstf)
+    dstf = find_dataset_betae(dataset, pct) # create dict of paths to train, test, validate data
+    r2id = create_relation_id_mapping(dstf) # create dict of relation --> unique idx
 
     train_df = pd.read_csv(dstf["train"]["graph"], delimiter=delimiter, header=None)
     valid_df = pd.read_csv(dstf["valid"]["graph"], delimiter=delimiter, header=None)
@@ -97,7 +166,18 @@ def get_graphs(dataset, pct, delimiter="\t"):
     return train, validate, test
 
 
-def get_factories(dataset, pct):
+def get_factories(dataset: str, pct: int) -> Tuple[TriplesFactory, TriplesFactory, TriplesFactory]:
+    """
+       I don't understand the purpose of this method. Seems redundant to have this AND get_graphs,
+       since get_graphs is called and that already returns the TriplesFactories you need?  
+
+    Args:
+        dataset (str): the name of the dataset
+        pct (int): unknown entity relative percentage
+
+    Returns:
+        Tuple[TriplesFactory, TriplesFactory, TriplesFactory]: train, validate, test triples factories
+    """
     triples_factory = TriplesFactory
 
     dstf = find_dataset_betae(dataset, pct)
@@ -125,7 +205,18 @@ def get_factories(dataset, pct):
     return train, validate, test
 
 
-def graph_entity_inclusion_map(subgraph_tf, graph_tf):
+def graph_entity_inclusion_map(subgraph_tf: TriplesFactory, graph_tf: TriplesFactory) -> Dict[int, int]:
+    """
+        Produces a dict mapping ids of entities in our original graph (subgraph) to entities in the 
+        evaluation graph, if they exist in the evaluation graph. Otherwise, we toss them out. 
+
+    Args:
+        subgraph_tf (TriplesFactory): original graph
+        graph_tf (TriplesFactory): extended graph
+
+    Returns:
+        Dict[int, int]: mapping base entity ids to extended entity ids. 
+    """
     subgraph_entity_id_to_label = subgraph_tf.entity_id_to_label
     graph_label_to_entity_id = graph_tf.entity_to_id
     return {
@@ -135,7 +226,18 @@ def graph_entity_inclusion_map(subgraph_tf, graph_tf):
     }
 
 
-def graph_relation_inclusion_map(subgraph_tf, graph_tf):
+def graph_relation_inclusion_map(subgraph_tf: TriplesFactory, graph_tf: TriplesFactory) -> Dict[int, int]:
+    """
+        Produces a dict mapping ids of relations in our original graph (subgraph) to relation in the 
+        evaluation graph, if they exist in the evaluation graph. Otherwise, we toss them out. 
+
+    Args:
+        subgraph_tf (TriplesFactory): original graph
+        graph_tf (TriplesFactory): extended graph
+
+    Returns:
+        Dict[int, int]: mapping base relation ids to extended relation ids. 
+    """
     subgraph_relation_id_to_label = subgraph_tf.relation_id_to_label
     graph_label_to_relation_id = graph_tf.relation_to_id
     # relations should always be the same
@@ -267,19 +369,57 @@ def load_queries_and_answers(
 
 
 def get_train_eval_inclusion_data(
-    dataset,
-    dataset_pct,
-    orig_graph_type,
-    eval_graph_type,
-    include_complex=False,
-    query_structures=QUERY_STRUCTURES,
-    skip_ea=False,
-):
-    print("loading factories and graphs...")
-    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct)
-    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct)
+    dataset: str,
+    dataset_pct: int,
+    orig_graph_type: Literal["train", "valid", "test"],
+    eval_graph_type: Literal["train", "valid", "test"],
+    include_complex: bool = False,
+    query_structures: List[str] = QUERY_STRUCTURES,
+    skip_ea: bool = False,
+) -> dict:
+    """_summary_
 
-    def get_train_eval_sets(graph_type):
+    Args:
+        dataset (str): name of the dataset
+        dataset_pct (int): unknown entity relative percentage
+        orig_graph_type (Literal["train", "valid", "test"]): the type of the base graph (pre-extension)
+        eval_graph_type (Literal["train", "valid", "test"]): the type of the graph we will extend over
+        query_structures (List[str]): _description_
+        include_complex (bool, optional): _description_. Defaults to False.
+        skip_ea (bool, optional): _description_. Defaults to False.
+
+    Raises:
+        ValueError: raised if graph type is unknown.
+
+    Returns:
+        dict: A data structure with the following schema for tracking base/extended stuff: 
+        {
+            "orig": {"graph": orig_graph, "triples": orig_triples},
+            "eval": {"graph": eval_graph, "triples": eval_triples},
+            "inclusion": {
+                "entities": orig_eval_entity_inclusion,
+                "relations": orig_eval_relation_inclusion,
+            },
+        }
+    """
+    print("loading factories and graphs...")
+    train_graph, valid_graph, test_graph = get_graphs(dataset, dataset_pct) #TriplesFactories
+    print("Train_graph")
+    train_tf, valid_tf, test_tf = get_factories(dataset, dataset_pct) #Again, get TriplesFactories
+
+    def get_train_eval_sets(graph_type: Literal["train", "valid", "test"]) -> Tuple[TriplesFactory, TriplesFactory]:
+        """
+            Returns appropriate factories for graph type.
+
+        Args:
+            graph_type (Literal["train", "valid", "test"]): graph type
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            Tuple[TriplesFactory, TriplesFactory]: _description_
+        """
         if graph_type == "train":
             training_set = train_graph
             eval_set = train_tf
@@ -297,8 +437,8 @@ def get_train_eval_inclusion_data(
     eval_graph, eval_triples = get_train_eval_sets(eval_graph_type)
 
     print("computing orig-->eval inclusion maps...")
-    orig_eval_entity_inclusion = graph_entity_inclusion_map(orig_graph, eval_graph)
-    orig_eval_relation_inclusion = graph_relation_inclusion_map(orig_graph, eval_graph)
+    orig_eval_entity_inclusion = graph_entity_inclusion_map(orig_graph, eval_graph) # entity mapping int --> int
+    orig_eval_relation_inclusion = graph_relation_inclusion_map(orig_graph, eval_graph) # relation mapping int --> int
 
     r = {
         "orig": {"graph": orig_graph, "triples": orig_triples},

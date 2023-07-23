@@ -1,5 +1,5 @@
 from itertools import product
-from typing import List, Tuple
+from typing import List, Tuple, Literal
 
 import scipy.sparse as sps
 import torch
@@ -167,7 +167,7 @@ def diffuse_interior(
 
     xU = None
     for bix in range(0, edge_index.shape[1], batch_size):
-        # multiply a batch of vertex embeddings by the laplacian
+        # multiply a batch of entity embeddings by the laplacian
         xUb, _ = diffuser.diffuse_interior(
             edge_index[:, bix : bix + batch_size],  # edges
             relations[bix : bix + batch_size],  # edge types
@@ -497,7 +497,7 @@ class TransRExtender(KGExtender):
         )
 
 
-def get_extender(model_type):
+def get_extender(model_type: Literal['se', 'transe', 'rotate', 'transr']):
     if model_type == "se":
         return SEExtender
     if model_type == "transe":

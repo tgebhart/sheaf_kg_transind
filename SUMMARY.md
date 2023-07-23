@@ -25,7 +25,7 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
 * I also looked at complex_data_info.py. Not sure what this is for yet. Too many single-letter variables 😰
 
 ## 7/23: 
-* tracking `diffuse_interior`from `extend_best_from_hpo`. Steps: 
+* tracking `extend_best_from_hpo`.
     1. call `get_train_eval_inclusion_data` to get data structure that is a combo of the training + evaluation knowledge graphs: 
         ```json
         {
@@ -37,7 +37,19 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
             },
         }
         ```
-        * the inclusion maps `orig_eval_entity_inclusion` and `orig_eval_relation_inclusion` are
-        a 
+        * Question: what is the difference between a **graph** and a **triples factory**? We provide both in this data structure, but in the code they're both TriplesFactories that are intialized by the same data. Seems redundant.
+        * the inclusion maps `orig_eval_entity_inclusion` and `orig_eval_relation_inclusion` are just mappings of entities (resp. relations) that exist in the base knowledge graph to entities (resp. relations) in the extended knowledge graph. 
     
-    2. load the pre-trained model
+    2. Load the trained model. 
+    3. Extend the trained model to the extended knowledge graph using `expand_model_to_inductive_graph`. 
+    4. Diffuse the embeddings of the **known** entities (the *boundary* entities) to the **unknown** ones (the *interior* entities). 
+
+* Found a copy of the dataset https://github.com/DeepGraphLearning/pLogicNet/tree/master/data/FB15k-237
+    * this was helpful just for understanding what the structure of the dataset is like.
+
+* Think I figured out what "interior" vertices are: They are the entities from our extended graph which we have not seen in the original graph. The terminology had me confused for a minute!
+
+* Added a lot of docstrings + type hints in `data_tools.py`.
+
+* TODO: Start adding type hints + docstrings to `SEExtender`. 
+    * TODO: talk to tom about what makes the diffusion process unstable. 

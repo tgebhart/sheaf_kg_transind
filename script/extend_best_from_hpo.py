@@ -7,6 +7,8 @@ from data_tools import get_model_name_from_config, get_train_eval_inclusion_data
 from extension import diffuse_interior, get_extender
 from pykeen.evaluation import RankBasedEvaluator
 from utils import expand_model_to_inductive_graph, generate_eval_logspace
+from typing import Dict
+from data_tools import TriplesFactory
 
 DATASET = "fb15k-237"
 BASE_DATA_PATH = "data"
@@ -68,15 +70,16 @@ def run(
         f"complex_trained_model.pkl" if train_complex else "trained_model.pkl"
     )
 
+    # Get the dataset with training + eval data
     rdata = get_train_eval_inclusion_data(
         dataset, dataset_pct, orig_graph_type, eval_graph_type
     )
-    orig_graph = rdata["orig"]["graph"]
-    orig_triples = rdata["orig"]["triples"]
-    eval_graph = rdata["eval"]["graph"]
-    eval_triples = rdata["eval"]["triples"]
-    orig_eval_entity_inclusion = rdata["inclusion"]["entities"]
-    orig_eval_relation_inclusion = rdata["inclusion"]["relations"]
+    orig_graph: TriplesFactory = rdata["orig"]["graph"]
+    orig_triples: TriplesFactory = rdata["orig"]["triples"]
+    eval_graph: TriplesFactory = rdata["eval"]["graph"]
+    eval_triples: TriplesFactory = rdata["eval"]["triples"]
+    orig_eval_entity_inclusion: Dict[int, int] = rdata["inclusion"]["entities"]
+    orig_eval_relation_inclusion: Dict[int, int] = rdata["inclusion"]["relations"]
 
     # Define evaluator
     evaluator = RankBasedEvaluator()

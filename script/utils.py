@@ -4,6 +4,8 @@ import numpy as np
 import torch
 from pykeen.models.nbase import ERModel
 from pykeen.nn import Embedding
+from typing import Dict, Any
+from data_tools import TriplesFactory
 
 
 def batch_chunk(seq, size):
@@ -51,18 +53,20 @@ def expand_entity_embeddings(
 
 
 def expand_model_to_inductive_graph(
-    model, entity_inclusion, extended_graph
+    model: ERModel, entity_inclusion: Dict[int, int], extended_graph: TriplesFactory
 ) -> Tuple[ERModel, torch.Tensor]:
-    """_summary_
+    """
+    Expands the model to account for unseen entities by initializing embeddings of 
+    unseen (interior) entities, and maintaining embeddings of known entities.
 
     Args:
-        model (_type_): _description_
-        entity_inclusion (_type_): _description_
-        extended_graph (_type_): _description_
+        model (ERModel): The pykeen model to expand.
+        entity_inclusion (Dict[int, int]): mapping of original graph entity ids to extended graph entity ids
+        extended_graph (TripleFactory): the extended graph.
 
     Returns:
-        Tuple[ERModel, torch.Tensor]: A pair, consisting of the model with the updated embeddings,
-        and a tensor with the indices of all "interior" vertices.
+        Tuple[ERModel, torch.Tensor]: A pair, consisting of the model with the updated embeddings
+        for the extended graph, and a tensor with the (boolean) indices of all "interior" vertices. 
     """
     triples = extended_graph.mapped_triples
     edge_index = triples[:, [0, 2]].T
@@ -72,6 +76,8 @@ def expand_model_to_inductive_graph(
     boundary_vertices_extended = list(entity_inclusion.values())
     boundary_vertices_original = list(entity_inclusion.keys())
     # interior vertices are the set difference of all nodes and the boundary
+    # They are the entities which we have not seen; i.e. they are not shared between the 
+    # original + extended graphs.
     interior_ent_msk = torch.as_tensor(
         [e not in boundary_vertices_extended for e in all_ents]
     )
@@ -96,7 +102,7 @@ def expand_model_to_inductive_graph(
     return model, interior_ent_msk
 
 
-def generate_eval_logspace(iterations, num):
+def generate_eval_logspace(iterations, num) -> np.uint64:
     return np.around(np.logspace(0, np.log10(int(iterations)), int(num))).astype(
         np.uint64
     )
