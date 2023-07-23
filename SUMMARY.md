@@ -53,3 +53,4 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
 
 * TODO: Start adding type hints + docstrings to `SEExtender`. 
     * TODO: talk to tom about what makes the diffusion process unstable. 
+    * Consider pre-computing powers of the Laplacian using an optimized matrix exponentiation implementation, like https://pytorch.org/docs/stable/generated/torch.linalg.matrix_power.html, then applying to embedding once. Would this make a difference? 

@@ -167,7 +167,7 @@ def diffuse_interior(
 
     xU = None
     for bix in range(0, edge_index.shape[1], batch_size):
-        # multiply a batch of entity embeddings by the laplacian
+        # multiply a batch of entity embeddings by the laplacian. SINGLE ITERATION.
         xUb, _ = diffuser.diffuse_interior(
             edge_index[:, bix : bix + batch_size],  # edges
             relations[bix : bix + batch_size],  # edge types
@@ -176,7 +176,7 @@ def diffuse_interior(
         if xU is None:
             xU = xUb
         else:
-            xU += xUb
+            xU += xUb # accumulate all batches into one vector, since they'll be filling unique indices
 
     if degree_normalize:
         degrees = xU.shape[1] * degree(edge_index.flatten().to(diffuser.device))
