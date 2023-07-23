@@ -11,7 +11,7 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
     * do training with ^^ on some knowledge graph G
     * given new pieces of the graph that we don't know, diffuse the embeddings from known edges/vertices to the unfamiliar parts by iteratively applying the sheaf laplacian.
 
-* *TODO*: what exactly is harmonic extension lol? is it just the above process? 
+* *TODO*: what exactly is harmonic extension lol? is it just the above process? UPDATE: harmonic extension is the process that iteratively applying the laplacian is **approximating**. 
 * *TODO*: explore pykeen + run some simple models (ex: SE aka structured Embedding) on some sample data to get a feel for how they work (as well as expected methods/properties). 
 * *TODO*: what does it mean to diffuse the *interior* of something? Find out what this actually means haha
 
