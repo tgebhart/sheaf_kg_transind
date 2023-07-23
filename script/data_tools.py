@@ -9,8 +9,7 @@ import torch
 torch.manual_seed(0)
 from complex_data_info import QUERY_STRUCTURES, name_query_dict
 from models import SE
-from pykeen.datasets.inductive import (InductiveFB15k237, InductiveNELL,
-                                       InductiveWN18RR)
+from pykeen.datasets.inductive import InductiveFB15k237, InductiveNELL, InductiveWN18RR
 from pykeen.triples import TriplesFactory
 
 BASE_DATA_PATH = "data"

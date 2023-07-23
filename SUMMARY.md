@@ -17,9 +17,27 @@ sheaf-based kg embedding. This doesn't implement the full range of assumed metho
 
 ## 7/20: 
 
-* Using full_run_from_inductive_hpo as my starting point, I looked at diffuse_interior in extension.py. 
+* Using full_run_from_inductive_hpo as my starting point, I looked at `diffuse_interior` in extension.py. 
     * What defines the interior/boundary? The data, it seems. I wanted to track down where `interior_ent_msk` comes from. 
 
 * I looked at `expand_entity_embeddings` and `expand_model_to_inductive_graph` in utils.py, wrote some doc strings, and added some type hints. These are key functions used in process of extending embeddings to unseen entities. 
 
 * I also looked at complex_data_info.py. Not sure what this is for yet. Too many single-letter variables 😰
+
+## 7/23: 
+* tracking `diffuse_interior`from `extend_best_from_hpo`. Steps: 
+    1. call `get_train_eval_inclusion_data` to get data structure that is a combo of the training + evaluation knowledge graphs: 
+        ```json
+        {
+            "orig": {"graph": orig_graph, "triples": orig_triples},
+            "eval": {"graph": eval_graph, "triples": eval_triples},
+            "inclusion": {
+                "entities": orig_eval_entity_inclusion,
+                "relations": orig_eval_relation_inclusion,
+            },
+        }
+        ```
+        * the inclusion maps `orig_eval_entity_inclusion` and `orig_eval_relation_inclusion` are
+        a 
+    
+    2. load the pre-trained model

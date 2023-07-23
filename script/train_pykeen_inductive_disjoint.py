@@ -3,8 +3,7 @@ import os
 
 import pandas as pd
 import torch
-from data_tools import (get_disjoint_dataset, get_eval_graph,
-                        split_mapped_triples)
+from data_tools import get_disjoint_dataset, get_eval_graph, split_mapped_triples
 from extension import diffuse_interior, get_extender
 from pykeen.evaluation import RankBasedEvaluator
 from pykeen.pipeline import pipeline

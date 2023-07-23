@@ -2,8 +2,12 @@ import argparse
 import json
 import os
 
-from data_tools import (get_disjoint_dataset, get_eval_graph,
-                        get_model_name_from_config, load_best_config)
+from data_tools import (
+    get_disjoint_dataset,
+    get_eval_graph,
+    get_model_name_from_config,
+    load_best_config,
+)
 from pykeen.pipeline import pipeline_from_config
 
 DATASET = "InductiveFB15k237"

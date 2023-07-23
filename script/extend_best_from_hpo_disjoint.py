@@ -3,8 +3,7 @@ import os
 
 import pandas as pd
 import torch
-from data_tools import (get_disjoint_dataset, get_eval_graph,
-                        get_model_name_from_config)
+from data_tools import get_disjoint_dataset, get_eval_graph, get_model_name_from_config
 from extension import diffuse_interior, get_extender
 from pykeen.evaluation import RankBasedEvaluator
 from utils import expand_model_to_inductive_graph, generate_eval_logspace

@@ -5,9 +5,13 @@ from functools import partial
 
 import optuna
 import torch
-from data_tools import (get_disjoint_dataset, get_eval_graph,
-                        get_model_name_from_config, load_hpo_config,
-                        split_mapped_triples)
+from data_tools import (
+    get_disjoint_dataset,
+    get_eval_graph,
+    get_model_name_from_config,
+    load_hpo_config,
+    split_mapped_triples,
+)
 from extension import diffuse_interior, get_extender
 from pykeen.evaluation import RankBasedEvaluator
 from pykeen.pipeline import pipeline_from_config

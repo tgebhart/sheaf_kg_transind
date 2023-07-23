@@ -6,8 +6,11 @@ import numpy as np
 import torch
 from complex_data_info import QUERY_STRUCTURES
 from complex_extension import get_complex_extender
-from data_tools import (get_model_name_from_config,
-                        get_train_eval_inclusion_data, load_best_config)
+from data_tools import (
+    get_model_name_from_config,
+    get_train_eval_inclusion_data,
+    load_best_config,
+)
 from pykeen.losses import MarginRankingLoss
 from pykeen.pipeline import pipeline_from_config
 from pykeen.sampling import BasicNegativeSampler

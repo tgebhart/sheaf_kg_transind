@@ -14,6 +14,7 @@ from torch_scatter import scatter
 
 ALPHA = 1e-1
 
+
 class KGExtender:
     """Harmonic extension base class."""
 
@@ -88,6 +89,7 @@ class KGExtender:
 
         return Lx
 
+
 def coboundary(
     edge_index: torch.Tensor, Fh: torch.Tensor, Ft: torch.Tensor, relabel=False
 ) -> torch.Tensor:
@@ -95,14 +97,14 @@ def coboundary(
     relation?
 
     Args:
-        edge_index (_type_): list representation of a graph. 
-        ex: [[0, 1], [1, 2]].T, where we have vertices 0,1,2 and edges 0-->1-->2 
+        edge_index (_type_): list representation of a graph.
+        ex: [[0, 1], [1, 2]].T, where we have vertices 0,1,2 and edges 0-->1-->2
         Fh (torch.Tensor): restriction map from h -> e
         Ft (torch.Tensor): restriction map from t -> e
         relabel (bool, optional): _description_. Defaults to False.
 
     Returns:
-        torch.Tensor: the coboundary matrix from C^0 to C^1. 
+        torch.Tensor: the coboundary matrix from C^0 to C^1.
     """
     device = Fh.device
     if relabel:
@@ -129,14 +131,19 @@ def coboundary(
     # this ^^ allows us to specify the non-zero entries of the result that we want to populate with vals
 
 
-def diffuse_interior(diffuser: KGExtender, triples: List[list], interior_ent_msk: torch.Tensor, batch_size: int = None):
+def diffuse_interior(
+    diffuser: KGExtender,
+    triples: List[list],
+    interior_ent_msk: torch.Tensor,
+    batch_size: int = None,
+):
     """
         Diffuse by application of the extension model's sheaf
-        Laplacian. The terms 'extender' and 'diffuser' seem to be used interchangeably. 
+        Laplacian. The terms 'extender' and 'diffuser' seem to be used interchangeably.
 
     Args:
-        diffuser (KGExtender): The extension method to use. 
-        triples (List[list]): a list of entity - relation - entity triples, each of which is also a list. 
+        diffuser (KGExtender): The extension method to use.
+        triples (List[list]): a list of entity - relation - entity triples, each of which is also a list.
         interior_ent_msk (torch.Tensor): indices of vertices in the interior
         batch_size (int, optional): Batch size. Defaults to None.
 
@@ -162,8 +169,8 @@ def diffuse_interior(diffuser: KGExtender, triples: List[list], interior_ent_msk
     for bix in range(0, edge_index.shape[1], batch_size):
         # multiply a batch of vertex embeddings by the laplacian
         xUb, _ = diffuser.diffuse_interior(
-            edge_index[:, bix : bix + batch_size], # edges
-            relations[bix : bix + batch_size], # edge types
+            edge_index[:, bix : bix + batch_size],  # edges
+            relations[bix : bix + batch_size],  # edge types
             nv=num_nodes,
         )
         if xU is None:
@@ -210,9 +217,6 @@ def extend_interior(extender, triples, interior_ent_msk, batch_size=None):
         interior_boundary_msk,
         boundary_vertices,
     )
-
-
-
 
 
 class SEExtender(KGExtender):

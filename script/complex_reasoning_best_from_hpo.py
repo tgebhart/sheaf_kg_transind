@@ -5,8 +5,7 @@ import pandas as pd
 import torch
 from complex_data_info import QUERY_STRUCTURES
 from complex_extension import get_complex_extender
-from data_tools import (get_model_name_from_config,
-                        get_train_eval_inclusion_data)
+from data_tools import get_model_name_from_config, get_train_eval_inclusion_data
 from pykeen.evaluation import RankBasedEvaluator
 from tqdm import tqdm
 

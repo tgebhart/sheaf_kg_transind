@@ -2,9 +2,12 @@ import argparse
 import json
 import os
 
-from data_tools import (get_model_name_from_config,
-                        get_train_eval_inclusion_data, load_hpo_config,
-                        split_mapped_triples)
+from data_tools import (
+    get_model_name_from_config,
+    get_train_eval_inclusion_data,
+    load_hpo_config,
+    split_mapped_triples,
+)
 from pykeen.hpo import hpo_pipeline_from_config
 
 DATASET = "fb15k-237"
