@@ -22,15 +22,7 @@
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
-      "loss_kwargs_ranges": {
-        "margin": {
-          "type": "float",
-          "low": 1.0, 
-          "high": 3.0,
-          "scale": "linear"
-        }
-      },
+      "loss": "crossentropy",
       "regularizer": "NoRegularizer",
       "optimizer": "adam",
       "optimizer_kwargs": {
@@ -44,15 +36,11 @@
           "scale": "log"
         }
       },
-      "training_loop": "slcwa",
-      "negative_sampler": "BasicNegativeSampler",
-      "negative_sampler_kwargs_ranges": {
-        "num_negs_per_pos": {
-          "type": "int",
-          "low": 1,
-          "high": 50,
-          "q": 1
-        }
+      "training_loop": "lcwa",
+      "training_kwargs": {
+        "batch_size": 256,
+        "label_smoothing": 0.717650072390557,
+        "num_epochs": 500
       },
       "evaluator": "RankBasedEvaluator",
       "evaluator_kwargs": {
@@ -80,7 +68,7 @@
       }
     },
     "optuna": {
-      "n_trials": 100,
+      "n_trials": 200,
       "metric": "hits@10",
       "direction": "maximize"
     }
