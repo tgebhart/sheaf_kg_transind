@@ -18,16 +18,22 @@
         "embedding_dim": {
           "type": "int",
           "low": 5,
-          "high": 7,
+          "high": 8,
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
+      "loss": "nssa",
       "loss_kwargs_ranges": {
         "margin": {
           "type": "float",
           "low": 1.0, 
-          "high": 3.0,
+          "high": 15.0,
+          "scale": "linear"
+        },
+        "adversarial_temperature": {
+          "type": "float",
+          "low": 0, 
+          "high": 2.0,
           "scale": "linear"
         }
       },
@@ -49,13 +55,13 @@
         "num_negs_per_pos": {
           "type": "int",
           "low": 1,
-          "high": 45,
+          "high": 50,
           "q": 1
         }
       },
       "training_kwargs": {
-        "num_epochs": 1000,
-        "batch_size": 1024,
+        "num_epochs": 600,
+        "batch_size": 512,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -63,11 +69,11 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 1024
+        "batch_size": 512
       }
     },
     "optuna": {
-      "n_trials": 50,
+      "n_trials": 100,
       "metric": "hits@10",
       "direction": "maximize"  
     }
