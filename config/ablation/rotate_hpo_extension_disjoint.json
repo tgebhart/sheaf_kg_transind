@@ -10,7 +10,7 @@
         "patience": 2,
         "relative_delta": 0.002
       },
-      "model": "RotatE",
+      "model": "rotate",
       "model_kwargs_ranges": {
         "embedding_dim": {
           "type": "int",

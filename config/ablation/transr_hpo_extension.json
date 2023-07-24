@@ -10,7 +10,7 @@
         "patience": 2,
         "relative_delta": 0.002
       },
-      "model": "TransR",
+      "model": "transr",
       "model_kwargs": {
         "scoring_fct_norm": 2
       },

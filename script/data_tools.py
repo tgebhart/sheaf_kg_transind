@@ -269,7 +269,7 @@ def load_best_config(hpo_config_loc: str, load: bool = True) -> dict:
     with open(hpo_config_loc, 'r') as f:
         config = json.load(f)
     
-    if load and config['pipeline']['model'] == 'se':
+    if load and config['pipeline']['model'].lower() == 'se':
         # load model 
         config['pipeline']['model'] = SE
         

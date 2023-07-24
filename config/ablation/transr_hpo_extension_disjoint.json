@@ -1,7 +1,7 @@
 {
     "type": "hpo",
     "metadata": {
-      "title": "HPO Over FB15K-237 for TransR"
+      "title": "HPO for TransR"
     },
     "pipeline": {
       "stopper": "early",
@@ -24,19 +24,11 @@
         "relation_dim": {
           "type": "int",
           "low": 2,
-          "high": 6,
+          "high": 7,
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
-      "loss_kwargs_ranges": {
-        "margin": {
-          "type": "float",
-          "low": 1.0, 
-          "high": 3.0,
-          "scale": "linear"
-        }
-      },
+      "loss": "crossentropy",
       "optimizer": "adam",
       "optimizer_kwargs": {
         "weight_decay": 0.0
@@ -49,20 +41,11 @@
           "scale": "log"
         }
       },
-      "training_loop": "slcwa",
-      "negative_sampler": "BasicNegativeSampler",
-      "negative_sampler_kwargs_ranges": {
-        "num_negs_per_pos": {
-          "type": "int",
-          "low": 1,
-          "high": 45,
-          "q": 1
-        }
-      },
+      "training_loop": "lcwa",
       "training_kwargs": {
         "num_epochs": 500,
-        "label_smoothing": 0.0,
-        "batch_size": 512
+        "label_smoothing": 0.6,
+        "batch_size": 256
       },
       "evaluator": "RankBasedEvaluator",
       "evaluator_kwargs": {

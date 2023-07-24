@@ -1,7 +1,7 @@
 {
     "type": "hpo",
     "metadata": {
-      "title": "HPO Over fb15k237 for se"
+      "title": "HPO for se"
     },
     "pipeline": {
       "stopper": "early",
