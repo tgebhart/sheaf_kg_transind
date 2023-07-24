@@ -19,12 +19,18 @@
           "scale": "power_two"
         }
       },
-      "loss": "MarginRankingLoss",
+      "loss": "nssa",
       "loss_kwargs_ranges": {
         "margin": {
           "type": "float",
           "low": 1.0, 
-          "high": 3.0,
+          "high": 30.0,
+          "scale": "linear"
+        },
+        "adversarial_temperature": {
+          "type": "float",
+          "low": 0, 
+          "high": 2.0,
           "scale": "linear"
         }
       },
@@ -47,13 +53,13 @@
         "num_negs_per_pos": {
           "type": "int",
           "low": 1,
-          "high": 50,
+          "high": 90,
           "q": 1
         }
       },
       "training_kwargs": {
-        "num_epochs": 1000,
-        "batch_size": 1024,
+        "num_epochs": 500,
+        "batch_size": 512,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -65,7 +71,7 @@
       }
     },
     "optuna": {
-      "n_trials": 50,
+      "n_trials": 100,
       "metric": "hits@10",
       "direction": "maximize"
     }
