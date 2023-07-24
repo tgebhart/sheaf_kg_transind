@@ -52,7 +52,7 @@
         "filtered": true
       },
       "evaluation_kwargs": {
-        "batch_size": 512
+        "batch_size": 32
       }
     },
     "extension": {
