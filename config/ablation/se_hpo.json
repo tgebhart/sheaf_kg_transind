@@ -60,8 +60,8 @@
         }
       },
       "training_kwargs": {
-        "num_epochs": 600,
-        "batch_size": 512,
+        "num_epochs": 500,
+        "batch_size": null,
         "label_smoothing": 0.0
       },
       "evaluator": "RankBasedEvaluator",
@@ -73,7 +73,7 @@
       }
     },
     "optuna": {
-      "n_trials": 100,
+      "n_trials": 50,
       "metric": "hits@10",
       "direction": "maximize"  
     }
