@@ -54,7 +54,7 @@
         }
       },
       "training_kwargs": {
-        "num_epochs": 1000,
+        "num_epochs": 600,
         "batch_size": 64,
         "label_smoothing": 0.0
       },
@@ -84,7 +84,7 @@
       }
     },
     "optuna": {
-      "n_trials": 150,
+      "n_trials": 125,
       "metric": "hits@10",
       "direction": "maximize"
   }
