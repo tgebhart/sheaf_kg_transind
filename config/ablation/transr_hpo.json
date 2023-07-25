@@ -18,7 +18,7 @@
         "embedding_dim": {
           "type": "int",
           "low": 4,
-          "high": 7,
+          "high": 6,
           "scale": "power_two"
         },
         "relation_dim": {
@@ -43,7 +43,7 @@
       },
       "training_loop": "lcwa",
       "training_kwargs": {
-        "num_epochs": 500,
+        "num_epochs": 250,
         "label_smoothing": 0.6,
         "batch_size": 256
       },
@@ -56,7 +56,7 @@
       }
     },
     "optuna": {
-      "n_trials": 100,
+      "n_trials": 50,
       "metric": "hits@10",
       "direction": "maximize"
     }
