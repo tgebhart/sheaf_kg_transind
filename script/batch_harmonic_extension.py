@@ -77,7 +77,11 @@ def Kron_reduction(edge_index,restriction_maps,boundary_vertices,interior_vertic
     LUU = L[np.ix_(batch_idx,Uidx,Uidx)]
 
     # lstsq recommended by pytorch docs https://pytorch.org/docs/stable/generated/torch.linalg.pinv.html
-    schur = LBB - torch.transpose(LUB, 1, 2) @ torch.linalg.lstsq(LUU, LUB).solution
+    try:
+        schur = LBB - torch.transpose(LUB, 1, 2) @ torch.linalg.lstsq(LUU, LUB).solution
+    except torch._C._LinAlgError:
+        perturbation = torch.randn(*LUU.shape, device=LUU.device) * 1e-6  # Small random noise
+        schur = LBB - torch.transpose(LUB, 1, 2) @ torch.linalg.lstsq(LUU+perturbation, LUB).solution
 
     return schur
 
