@@ -64,18 +64,16 @@ class KnowledgeSheaf(torch.nn.Module):
         # This will break if the edge_index doesn't see every node.
         # This also breaks if we have multiple edges between nodes, since we use
         # torch.ones. Duh. 
-        weights = torch.ones(
-            (self.edge_index.size(1),), device=self.edge_index.device
-        )
         dense_adj_matrix = torch.sparse_coo_tensor(
             indices = self.edge_index, 
           values = torch.ones(self.n_edges)
         ).to_dense()
-        output_indices = torch.zeros(3, dtype=torch.int64)
+        output_indices = torch.zeros(self.n_nodes, dtype=torch.int64)
         deg = scatter(src=dense_adj_matrix, index=output_indices, dim=0)
         deg_inv_sqrt = deg.pow_(-0.5)
         deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float("inf"), 0)
-        return deg_inv_sqrt
+        assert deg_inv_sqrt.T.shape == (self.n_nodes, 1)
+        return deg_inv_sqrt.T
 
     def sheaf_dirichlet_energy(self, entity_reps):
         """
@@ -83,8 +81,14 @@ class KnowledgeSheaf(torch.nn.Module):
         """
 
         # This goes ahead and computes the rescaled inputs D_v^{-1/2}*x_v ahead of time for all x_v.
+        # entity_reps is n_nodes x feature_dim, so we need to transpose to make multiplication work
+        print("ENTITY REPS SHAPE: ", entity_reps.shape)
+        print("actual degrees tensor: ", self.inv_node_degs.shape)
+        print("values: ", self.inv_node_degs)
+        print("Degree matrix shape: ", torch.diag(self.inv_node_degs).shape)
+        print("unique vals in degree tensor: ", len(self.inv_node_degs.unique()))
         normalized_entity_reps = torch.matmul(
-            entity_reps, torch.diag(self.inv_node_degs)
+            entity_reps.T, torch.diag(self.inv_node_degs)
         )
 
         # Here is where I'm rescaling the restriction maps to make them norm 1.
