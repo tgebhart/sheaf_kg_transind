@@ -24,14 +24,14 @@ class KnowledgeSheaf(torch.nn.Module):
 
     def __init__(
         self,
-        n_nodes,
-        edge_index,
+        n_nodes: int,
+        edge_index: torch.Tensor,
         entity_types,
         stalk_dim: int,
-        restriction_maps=None,
-        orthogonal=True,
-        verbose=False,
-        device=None,
+        restriction_maps: torch.Tensor = None,
+        orthogonal: bool =True,
+        verbose: bool =False,
+        device: str = None,
     ):
         super().__init__()
         self.edge_index = edge_index
@@ -48,8 +48,8 @@ class KnowledgeSheaf(torch.nn.Module):
         # Wait, I might be being stupid here. I'm not allowing for multiple different relation types between two entity types. E.g. (1)-->(2) could be "friends" or "enemies". So far, all the datasets I'm using are not inherently knowledge graphs, so I'm CREATING edge types from unique combinatiosn
         self.stalk_dim = stalk_dim
         self.orthogonal = orthogonal
-        self.n_nodes = n_nodes
-        self.inv_node_degs = (
+        self.n_nodes= n_nodes
+        self.inv_node_degs: torch.Tensor = (
             self._get_degs()
         )  # This is a [n_nodes, 1] tensor that gives the degree^{-1/2} of each node.
 
@@ -72,7 +72,7 @@ class KnowledgeSheaf(torch.nn.Module):
         deg = scatter(src=dense_adj_matrix, index=output_indices, dim=0)
         deg_inv_sqrt = deg.pow_(-0.5)
         deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float("inf"), 0)
-        assert deg_inv_sqrt.T.shape == (self.n_nodes, 1)
+        assert deg_inv_sqrt.T.shape == (self.n_nodes, 1) #checking return shape
         return deg_inv_sqrt.T
 
     def sheaf_dirichlet_energy(self, entity_reps):
@@ -88,7 +88,7 @@ class KnowledgeSheaf(torch.nn.Module):
         print("Degree matrix shape: ", torch.diag(self.inv_node_degs).shape)
         print("unique vals in degree tensor: ", len(self.inv_node_degs.unique()))
         normalized_entity_reps = torch.matmul(
-            entity_reps.T, torch.diag(self.inv_node_degs)
+            entity_reps.T, torch.diag(self.inv_node_degs.squeeze())
         )
 
         # Here is where I'm rescaling the restriction maps to make them norm 1.
