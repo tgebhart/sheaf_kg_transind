@@ -64,10 +64,15 @@ class KnowledgeSheaf(torch.nn.Module):
         # This will break if the edge_index doesn't see every node.
         # This also breaks if we have multiple edges between nodes, since we use
         # torch.ones. Duh. 
-        index = torch.zeros(
+        weights = torch.ones(
             (self.edge_index.size(1),), device=self.edge_index.device
         )
-        deg = scatter(src=self.edge_index, index=index, dim=0)
+        dense_adj_matrix = torch.sparse_coo_tensor(
+            indices = self.edge_index, 
+          values = torch.ones(self.n_edges)
+        ).to_dense()
+        output_indices = torch.zeros(3, dtype=torch.int64)
+        deg = scatter(src=dense_adj_matrix, index=output_indices, dim=0)
         deg_inv_sqrt = deg.pow_(-0.5)
         deg_inv_sqrt.masked_fill_(deg_inv_sqrt == float("inf"), 0)
         return deg_inv_sqrt
