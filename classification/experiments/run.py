@@ -11,13 +11,18 @@ import torch
 from torch_geometric.data import NeighborSampler
 
 from experiments.parser import get_parser
-from utilities.data_loading import get_dataset, set_train_val_test_split, get_missing_feature_mask
+from utilities.data_loading import (
+    get_dataset,
+    set_train_val_test_split,
+    get_missing_feature_mask,
+)
 from models.GCN_models import get_model
 from utilities.seeds import seeds
 from utilities.extension_strategies import filling
 from experiments.evaluation import test
 
 logger = logging.getLogger(__name__)
+
 
 def train(model, x, data, optimizer, critereon, train_loader=None, device="cuda"):
     model.train()
@@ -72,11 +77,14 @@ def run(args):
     assert not (
         args.graph_sampling and args.model != "sage"
     ), f"{args.model} model does not support training with neighborhood sampling"
-    assert not (args.graph_sampling and args.jk), "Jumping Knowledge is not supported with neighborhood sampling"
+    assert not (
+        args.graph_sampling and args.jk
+    ), "Jumping Knowledge is not supported with neighborhood sampling"
 
     device = torch.device(
         f"cuda:{args.gpu_idx}"
-        if torch.cuda.is_available() and not (args.dataset_name == "OGBN-Products" and args.model == "lp")
+        if torch.cuda.is_available()
+        and not (args.dataset_name == "OGBN-Products" and args.model == "lp")
         else "cpu"
     )
     dataset, evaluator = get_dataset(name=args.dataset_name, homophily=args.homophily)
@@ -102,7 +110,12 @@ def run(args):
     # as we first compute the representation of all nodes after the first layer (in batches), then for the second layer, and so on
     inference_loader = (
         NeighborSampler(
-            dataset.data.edge_index, node_idx=None, sizes=[-1], batch_size=4096, shuffle=False, num_workers=12,
+            dataset.data.edge_index,
+            node_idx=None,
+            sizes=[-1],
+            batch_size=4096,
+            shuffle=False,
+            num_workers=12,
         )
         if args.graph_sampling
         else None
@@ -111,7 +124,10 @@ def run(args):
     for seed in tqdm(seeds[: args.n_runs]):
         num_classes = dataset.num_classes
         data = set_train_val_test_split(
-            seed=seed, data=dataset.data, split_idx=split_idx, dataset_name=args.dataset_name,
+            seed=seed,
+            data=dataset.data,
+            split_idx=split_idx,
+            dataset_name=args.dataset_name,
         ).to(device)
         train_start = time.time()
         if args.model == "lp":
@@ -125,27 +141,39 @@ def run(args):
             ).to(device)
             logger.info("Starting Label Propagation")
             logits = model(y=data.y, edge_index=data.edge_index, mask=data.train_mask)
-            (_, val_acc, test_acc), _ = test(model=None, x=None, data=data, logits=logits, evaluator=evaluator)
+            (_, val_acc, test_acc), _ = test(
+                model=None, x=None, data=data, logits=logits, evaluator=evaluator
+            )
         else:
             missing_feature_mask = get_missing_feature_mask(
-                rate=args.missing_rate, n_nodes=n_nodes, n_features=n_features, type=args.mask_type,
+                rate=args.missing_rate,
+                n_nodes=n_nodes,
+                n_features=n_features,
+                type=args.mask_type,
             ).to(device)
             x = data.x.clone()
-            #x[~missing_feature_mask] = float("nan") This makes absolutely sure that I don't use the hidden of values of x to extend! However, we are careful not to do this, and I need these values to train my sheaf laplacian!
+            # x[~missing_feature_mask] = float("nan") This makes absolutely sure that I don't use the hidden of values of x to extend! However, we are careful not to do this, and I need these values to train my sheaf laplacian!
             y = data.y.clone()
 
             logger.debug("Starting feature filling")
             start = time.time()
             filled_features = (
-                filling(args.filling_method, data.edge_index, x, y, missing_feature_mask, args.num_iterations,)
+                filling(
+                    args.filling_method,
+                    data.edge_index,
+                    x,
+                    y,
+                    missing_feature_mask,
+                    args.num_iterations,
+                )
                 if args.model not in ["gcnmf", "pagnn"]
                 else torch.full_like(x, float("nan"))
             )
-            logger.debug(f"Feature filling completed. It took: {time.time() - start:.2f}s")
+            logger.debug(
+                f"Feature filling completed. It took: {time.time() - start:.2f}s"
+            )
 
-
-            x[~missing_feature_mask] = float("nan") # moved it here!
-
+            x[~missing_feature_mask] = float("nan")  # moved it here!
 
             model = get_model(
                 model_name=args.model,
@@ -168,23 +196,38 @@ def run(args):
                 x = torch.where(missing_feature_mask, data.x, filled_features)
 
                 train(
-                    model, x, data, optimizer, critereon, train_loader=train_loader, device=device,
+                    model,
+                    x,
+                    data,
+                    optimizer,
+                    critereon,
+                    train_loader=train_loader,
+                    device=device,
                 )
                 (train_acc, val_acc, tmp_test_acc), out = test(
-                    model, x=x, data=data, evaluator=evaluator, inference_loader=inference_loader, device=device,
+                    model,
+                    x=x,
+                    data=data,
+                    evaluator=evaluator,
+                    inference_loader=inference_loader,
+                    device=device,
                 )
                 if epoch == 0 or val_acc > max(val_accs):
                     test_acc = tmp_test_acc
                     y_soft = out.softmax(dim=-1)
 
                 val_accs.append(val_acc)
-                if epoch > args.patience and max(val_accs[-args.patience :]) <= max(val_accs[: -args.patience]):
+                if epoch > args.patience and max(val_accs[-args.patience :]) <= max(
+                    val_accs[: -args.patience]
+                ):
                     break
                 logger.debug(
                     f"Epoch {epoch + 1} - Train acc: {train_acc:.3f}, Val acc: {val_acc:.3f}, Test acc: {tmp_test_acc:.3f}. It took {time.time() - start:.2f}s"
                 )
 
-            (_, val_acc, test_acc), _ = test(model, x=x, data=data, logits=y_soft, evaluator=evaluator)
+            (_, val_acc, test_acc), _ = test(
+                model, x=x, data=data, logits=y_soft, evaluator=evaluator
+            )
         best_val_accs.append(val_acc)
         test_accs.append(test_acc)
         train_times.append(time.time() - train_start)

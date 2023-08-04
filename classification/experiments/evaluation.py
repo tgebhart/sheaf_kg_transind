@@ -2,7 +2,9 @@ import torch
 
 
 @torch.no_grad()
-def test(model, x, data, logits=None, evaluator=None, inference_loader=None, device="cuda"):
+def test(
+    model, x, data, logits=None, evaluator=None, inference_loader=None, device="cuda"
+):
     if logits is None:
         model.eval()
         logits = (
@@ -15,7 +17,9 @@ def test(model, x, data, logits=None, evaluator=None, inference_loader=None, dev
     for _, mask in data("train_mask", "val_mask", "test_mask"):
         pred = logits[mask].max(1)[1]
         if evaluator:
-            acc = evaluator.eval({"y_true": data.y[mask], "y_pred": pred.unsqueeze(1)})["acc"]
+            acc = evaluator.eval({"y_true": data.y[mask], "y_pred": pred.unsqueeze(1)})[
+                "acc"
+            ]
         else:
             acc = pred.eq(data.y[mask].squeeze()).sum().item() / mask.sum().item()
         accs.append(acc)

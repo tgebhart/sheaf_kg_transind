@@ -33,7 +33,8 @@ def get_model(model_name, num_features, num_classes, edge_index, x, args, mask=N
             num_features=num_features,
             num_classes=num_classes,
             K=args.num_layers,
-            cached=args.filling_method not in ["parameterization", "learnable_diffusion"],
+            cached=args.filling_method
+            not in ["parameterization", "learnable_diffusion"],
         )
     elif model_name in ["sage", "gcn", "gat"]:
         return GNN(
@@ -81,7 +82,14 @@ class SGC(torch.nn.Module):
 
 class GNN(torch.nn.Module):
     def __init__(
-        self, num_features, num_classes, hidden_dim, num_layers=2, dropout=0, conv_type="GCN", jumping_knowledge=False,
+        self,
+        num_features,
+        num_classes,
+        hidden_dim,
+        num_layers=2,
+        dropout=0,
+        conv_type="GCN",
+        jumping_knowledge=False,
     ):
         super(GNN, self).__init__()
 
@@ -93,14 +101,20 @@ class GNN(torch.nn.Module):
 
         if jumping_knowledge:
             self.lin = Linear(hidden_dim, num_classes)
-            self.jump = JumpingKnowledge(mode="max", channels=hidden_dim, num_layers=num_layers)
+            self.jump = JumpingKnowledge(
+                mode="max", channels=hidden_dim, num_layers=num_layers
+            )
 
         self.num_layers = num_layers
         self.dropout = dropout
         self.jumping_knowledge = jumping_knowledge
 
     def forward(self, x, edge_index=None, adjs=None, full_batch=True):
-        return self.forward_full_batch(x, edge_index) if full_batch else self.forward_sampled(x, adjs)
+        return (
+            self.forward_full_batch(x, edge_index)
+            if full_batch
+            else self.forward_sampled(x, adjs)
+        )
 
     def forward_full_batch(self, x, edge_index):
         xs = []
@@ -180,7 +194,14 @@ class MLP(torch.nn.Module):
 
 class GCNmf(torch.nn.Module):
     def __init__(
-        self, num_features, num_classes, hidden_dim, x, edge_index, dropout=0, n_components=5,
+        self,
+        num_features,
+        num_classes,
+        hidden_dim,
+        x,
+        edge_index,
+        dropout=0,
+        n_components=5,
     ):
         super(GCNmf, self).__init__()
         self.gc1 = GCNmfConv(
@@ -207,7 +228,14 @@ class GCNmf(torch.nn.Module):
 
 class PaGNN(torch.nn.Module):
     def __init__(
-        self, num_features, num_classes, hidden_dim, num_layers=2, dropout=0, mask=None, edge_index=None,
+        self,
+        num_features,
+        num_classes,
+        hidden_dim,
+        num_layers=2,
+        dropout=0,
+        mask=None,
+        edge_index=None,
     ):
         super(PaGNN, self).__init__()
         # NOTE: It not specified in their paper (https://arxiv.org/pdf/2003.10130.pdf), but the only way for their model to work is to have only the first layer

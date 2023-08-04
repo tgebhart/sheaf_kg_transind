@@ -16,6 +16,7 @@ from utilities.seeds import development_seed
 
 DATA_PATH = "data"
 
+
 def get_dataset(name: str, use_lcc: bool = True, homophily=None):
     path = os.path.join(DATA_PATH, name)
     evaluator = None
@@ -23,7 +24,9 @@ def get_dataset(name: str, use_lcc: bool = True, homophily=None):
     if name in ["Cora", "CiteSeer", "PubMed"]:
         dataset = Planetoid(path, name)
     elif name in ["OGBN-Arxiv", "OGBN-Products"]:
-        dataset = PygNodePropPredDataset(name=name.lower(), transform=transforms.ToSparseTensor(), root=path)
+        dataset = PygNodePropPredDataset(
+            name=name.lower(), transform=transforms.ToSparseTensor(), root=path
+        )
         evaluator = Evaluator(name=name.lower())
         use_lcc = False
     elif name == "MixHopSynthetic":
@@ -36,9 +39,12 @@ def get_dataset(name: str, use_lcc: bool = True, homophily=None):
 
     # Make graph undirected so that we have edges for both directions and add self loops
     dataset.data.edge_index = to_undirected(dataset.data.edge_index)
-    dataset.data.edge_index, _ = add_remaining_self_loops(dataset.data.edge_index, num_nodes=dataset.data.x.shape[0])
+    dataset.data.edge_index, _ = add_remaining_self_loops(
+        dataset.data.edge_index, num_nodes=dataset.data.x.shape[0]
+    )
 
     return dataset, evaluator
+
 
 def keep_only_largest_connected_component(dataset):
     lcc = get_largest_connected_component(dataset)
@@ -71,7 +77,9 @@ def get_component(dataset: InMemoryDataset, start: int = 0) -> set:
         current_node = queued_nodes.pop()
         visited_nodes.update([current_node])
         neighbors = col[np.where(row == current_node)[0]]
-        neighbors = [n for n in neighbors if n not in visited_nodes and n not in queued_nodes]
+        neighbors = [
+            n for n in neighbors if n not in visited_nodes and n not in queued_nodes
+        ]
         queued_nodes.update(neighbors)
     return visited_nodes
 
@@ -104,8 +112,9 @@ def remap_edges(edges: list, mapper: dict) -> list:
     return [row, col]
 
 
-def set_train_val_test_split(seed: int, data: Data, dataset_name: str, split_idx: int = None) -> Data:
-
+def set_train_val_test_split(
+    seed: int, data: Data, dataset_name: str, split_idx: int = None
+) -> Data:
     if dataset_name in [
         "Cora",
         "CiteSeer",
@@ -118,7 +127,11 @@ def set_train_val_test_split(seed: int, data: Data, dataset_name: str, split_idx
         # Use split from "Diffusion Improves Graph Learning" paper, which selects 20 nodes for each class to be in the training set
         num_val = 5000 if dataset_name == "CoauthorCS" else 1500
         data = set_per_class_train_val_test_split(
-            seed=seed, data=data, num_val=num_val, num_train_per_class=20, split_idx=split_idx,
+            seed=seed,
+            data=data,
+            num_val=num_val,
+            num_train_per_class=20,
+            split_idx=split_idx,
         )
     elif dataset_name in ["OGBN-Arxiv", "OGBN-Products"]:
         # OGBN datasets have pre-assigned split
@@ -127,34 +140,52 @@ def set_train_val_test_split(seed: int, data: Data, dataset_name: str, split_idx
         data.test_mask = split_idx["test"]
     elif dataset_name in ["Twitch", "Deezer-Europe", "FB100", "Actor"]:
         # Datasets from "New Benchmarks for Learning on Non-Homophilous Graphs". They use uniform 50/25/25 split
-        data = set_uniform_train_val_test_split(seed, data, train_ratio=0.5, val_ratio=0.25)
+        data = set_uniform_train_val_test_split(
+            seed, data, train_ratio=0.5, val_ratio=0.25
+        )
     elif dataset_name == "Syn-Cora":
         # Datasets from "Beyond Homophily in Graph Neural Networks: Current Limitations and Effective Designs". They use uniform 25/25/50 split
-        data = set_uniform_train_val_test_split(seed, data, train_ratio=0.25, val_ratio=0.25)
+        data = set_uniform_train_val_test_split(
+            seed, data, train_ratio=0.25, val_ratio=0.25
+        )
     elif dataset_name == "MixHopSynthetic":
         # Datasets from "MixHop: Higher-Order Graph Convolutional Architectures via Sparsified Neighborhood Mixing". They use uniform 33/33/33 split
-        data = set_uniform_train_val_test_split(seed, data, train_ratio=0.33, val_ratio=0.33)
+        data = set_uniform_train_val_test_split(
+            seed, data, train_ratio=0.33, val_ratio=0.33
+        )
     else:
         raise ValueError(f"We don't know how to split the data for {dataset_name}")
 
     return data
 
+
 def get_missing_feature_mask(rate, n_nodes, n_features, type="uniform"):
-    """ 
+    """
     Return mask of shape [n_nodes, n_features] indicating whether each feature is present or missing.
     If `type`='uniform', then each feature of each node is missing uniformly at random with probability `rate`.
     Instead, if `type`='structural', either we observe all features for a node, or we observe none. For each node
-    there is a probability of `rate` of not observing any feature. 
+    there is a probability of `rate` of not observing any feature.
     """
     if type == "structural":  # either remove all of a nodes features or none
-        return torch.bernoulli(torch.Tensor([1 - rate]).repeat(n_nodes)).bool().unsqueeze(1).repeat(1, n_features)
+        return (
+            torch.bernoulli(torch.Tensor([1 - rate]).repeat(n_nodes))
+            .bool()
+            .unsqueeze(1)
+            .repeat(1, n_features)
+        )
     else:
-        return torch.bernoulli(torch.Tensor([1 - rate]).repeat(n_nodes, n_features)).bool()
+        return torch.bernoulli(
+            torch.Tensor([1 - rate]).repeat(n_nodes, n_features)
+        ).bool()
+
 
 def set_per_class_train_val_test_split(
-    seed: int, data: Data, num_val: int = 1500, num_train_per_class: int = 20, split_idx: int = None,
+    seed: int,
+    data: Data,
+    num_val: int = 1500,
+    num_train_per_class: int = 20,
+    split_idx: int = None,
 ) -> Data:
-
     if split_idx is None:
         rnd_state = np.random.RandomState(development_seed)
         num_nodes = data.y.shape[0]
@@ -165,7 +196,9 @@ def set_per_class_train_val_test_split(
         rnd_state = np.random.RandomState(seed)
         for c in range(data.y.max() + 1):
             class_idx = development_idx[np.where(data.y[development_idx].cpu() == c)[0]]
-            train_idx.extend(rnd_state.choice(class_idx, num_train_per_class, replace=False))
+            train_idx.extend(
+                rnd_state.choice(class_idx, num_train_per_class, replace=False)
+            )
 
         val_idx = [i for i in development_idx if i not in train_idx]
 
@@ -181,7 +214,9 @@ def set_per_class_train_val_test_split(
     return data
 
 
-def set_uniform_train_val_test_split(seed: int, data: Data, train_ratio: float = 0.5, val_ratio: float = 0.25) -> Data:
+def set_uniform_train_val_test_split(
+    seed: int, data: Data, train_ratio: float = 0.5, val_ratio: float = 0.25
+) -> Data:
     rnd_state = np.random.RandomState(seed)
     num_nodes = data.y.shape[0]
 
@@ -212,6 +247,7 @@ def set_uniform_train_val_test_split(seed: int, data: Data, train_ratio: float =
     data.y[data.y == -1] = 0
 
     return data
+
 
 def get_mask(idx, num_nodes):
     """

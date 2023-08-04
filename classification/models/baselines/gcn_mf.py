@@ -34,7 +34,9 @@ def init_gmm(features, n_components):
 
 
 class GCNmfConv(nn.Module):
-    def __init__(self, in_features, out_features, x, edge_index, n_components, dropout, bias=True):
+    def __init__(
+        self, in_features, out_features, x, edge_index, n_components, dropout, bias=True
+    ):
         super(GCNmfConv, self).__init__()
         self.device = edge_index.device
         self.in_features = in_features
@@ -64,12 +66,19 @@ class GCNmfConv(nn.Module):
         self.gmm = init_gmm(self.features, self.n_components)
         self.logp.data = torch.FloatTensor(np.log(self.gmm.weights_)).to(self.device)
         self.means.data = torch.FloatTensor(self.gmm.means_).to(self.device)
-        self.logvars.data = torch.FloatTensor(np.log(self.gmm.covariances_)).to(self.device)
+        self.logvars.data = torch.FloatTensor(np.log(self.gmm.covariances_)).to(
+            self.device
+        )
 
     def calc_responsibility(self, mean_mat, variances):
         dim = self.in_features
         log_n = (
-            (-1 / 2) * torch.sum(torch.pow(mean_mat - self.means.unsqueeze(1), 2) / variances.unsqueeze(1), 2)
+            (-1 / 2)
+            * torch.sum(
+                torch.pow(mean_mat - self.means.unsqueeze(1), 2)
+                / variances.unsqueeze(1),
+                2,
+            )
             - (dim / 2) * np.log(2 * np.pi)
             - (1 / 2) * torch.sum(self.logvars)
         )
@@ -80,7 +89,9 @@ class GCNmfConv(nn.Module):
         x_imp = x.repeat(self.n_components, 1, 1)
         x_isnan = torch.isnan(x_imp)
         variances = torch.exp(self.logvars)
-        mean_mat = torch.where(x_isnan, self.means.repeat((x.size(0), 1, 1)).permute(1, 0, 2), x_imp)
+        mean_mat = torch.where(
+            x_isnan, self.means.repeat((x.size(0), 1, 1)).permute(1, 0, 2), x_imp
+        )
         var_mat = torch.where(
             x_isnan,
             variances.repeat((x.size(0), 1, 1)).permute(1, 0, 2).to(self.device),
@@ -88,7 +99,9 @@ class GCNmfConv(nn.Module):
         )
 
         # dropout
-        dropmat = F.dropout(torch.ones_like(mean_mat), self.dropout, training=self.training)
+        dropmat = F.dropout(
+            torch.ones_like(mean_mat), self.dropout, training=self.training
+        )
         mean_mat = mean_mat * dropmat
         var_mat = var_mat * dropmat
 

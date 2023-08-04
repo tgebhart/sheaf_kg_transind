@@ -22,7 +22,8 @@ def normalized_adjacency(edge_index, n_nodes):
 
     return edge_index, DAD
 
-def sheaf_diffusion_iter(X, Y, edge_index, n_nodes):  
+
+def sheaf_diffusion_iter(X, Y, edge_index, n_nodes):
     """
     EXPLANATION
     Given an edge_index, return the same edge_index and some edge weights computed as
@@ -45,7 +46,7 @@ def sheaf_diffusion_iter(X, Y, edge_index, n_nodes):
     edge_index, edge_weights
     representing a Laplacian so that really efficient computations can be done with it.
     """
-    
+
     edge_index, sheaf_prop_mat = learn_sheaf_laplacian(X, Y, edge_index)
 
     return edge_index, sheaf_prop_mat
