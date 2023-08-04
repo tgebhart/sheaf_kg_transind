@@ -88,7 +88,7 @@ class KnowledgeSheaf(torch.nn.Module):
         print("Degree matrix shape: ", torch.diag(self.inv_node_degs).shape)
         print("unique vals in degree tensor: ", len(self.inv_node_degs.unique()))
         normalized_entity_reps = torch.matmul(
-            entity_reps.T, torch.diag(self.inv_node_degs.squeeze())
+            entity_reps, torch.diag(self.inv_node_degs.squeeze())
         )
 
         # Here is where I'm rescaling the restriction maps to make them norm 1.
@@ -148,7 +148,7 @@ class KnowledgeSheaf(torch.nn.Module):
         sheaf_energy = self.sheaf_dirichlet_energy(entity_reps)
 
         if self.orthogonal:
-            penalty = 0
+            penalty = torch.Tensor([0]).to(self.device)
         else:
             penalty = torch.sum(
                 (1 / torch.linalg.matrix_norm(self.restriction_maps)).pow(2)
