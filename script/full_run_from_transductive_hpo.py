@@ -89,7 +89,7 @@ if __name__ == '__main__':
     reason(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, 
         orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph,
         evaluation_batch_size=args.batch_size, evaluation_slice_size=args.slice_size,
-        alpha=args.alpha, diffusion_iterations=args.diffusion_iterations,
+        alpha=args.alpha, diffusion_iterations=best_iteration,
         train_complex=False)
     
     if args.train_complex:
