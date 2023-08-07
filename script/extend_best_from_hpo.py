@@ -110,6 +110,8 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
         extender = get_extender(model)(model=orig_model, alpha=alpha)
 
         res_df = []
+        best_iteration = 0
+        best_iteration_value = 0
         eval_iterations = generate_eval_logspace(diffusion_iterations, diffusion_iterations//eval_every) 
         for iteration in range(1, diffusion_iterations+1):
 
@@ -148,7 +150,11 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                 diff_mr['eval_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_eval']
                 diff_mr['iteration'] = iteration
                 print(f'difference from orig model, iteration {iteration}:')
-                print(diff_mr[diff_mr['Metric'] == 'hits_at_10'])
+                iteration_val = diff_mr[diff_mr['Metric'] == 'hits_at_10']
+                print(iteration_val)
+                if iteration_val.values > best_iteration_value:
+                    best_iteration_value = iteration_val.values
+                    best_iteration = iteration
 
                 prev_it_mr = it_mr
                 res_df.append(diff_mr)
@@ -169,6 +175,8 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
         if not os.path.exists(savedir_model):
             os.makedirs(savedir_model)
         torch.save(orig_model, os.path.join(savedir_model, f'extended_model_{diffusion_iterations}iterations_{alpha}alpha.pkl'))
+
+        return best_iteration
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='harmonic extension task')
