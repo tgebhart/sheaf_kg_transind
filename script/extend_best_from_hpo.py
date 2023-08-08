@@ -152,8 +152,8 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                 print(f'difference from orig model, iteration {iteration}:')
                 iteration_val = diff_mr[diff_mr['Metric'] == 'hits_at_10']
                 print(iteration_val)
-                if iteration_val.values > best_iteration_value:
-                    best_iteration_value = iteration_val.values
+                if iteration_val.values[0] > best_iteration_value:
+                    best_iteration_value = iteration_val.values[0]
                     best_iteration = iteration
 
                 prev_it_mr = it_mr
