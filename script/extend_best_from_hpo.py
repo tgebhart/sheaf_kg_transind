@@ -150,10 +150,11 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                 diff_mr['eval_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_eval']
                 diff_mr['iteration'] = iteration
                 print(f'difference from orig model, iteration {iteration}:')
-                iteration_val = diff_mr[diff_mr['Metric'] == 'hits_at_10']
+                iteration_val = diff_mr[(diff_mr['Metric'] == 'hits_at_10') & (diff_mr['Side'] == 'both') & (diff_mr['Type'] == 'realistic')]
                 print(iteration_val)
-                if iteration_val.values[0] > best_iteration_value:
-                    best_iteration_value = iteration_val.values[0]
+                if iteration_val['Value_diffused'].values[0] > best_iteration_value:
+                    print(f'new best iteration value:', iteration_val['Value_diffused'].values[0])
+                    best_iteration_value = iteration_val['Value_diffused'].values[0]
                     best_iteration = iteration
 
                 prev_it_mr = it_mr
