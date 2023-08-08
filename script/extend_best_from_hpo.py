@@ -27,7 +27,7 @@ TRAIN_COMPLEX = False
 
 def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
         alpha=ALPHA, dataset_pct=DATASET_PCT, 
-        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS,
+        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, eval_data_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS,
         diffusion_batch_size=None, evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL,
         train_complex=TRAIN_COMPLEX, development=False):
 
@@ -55,7 +55,7 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
 
     savename_model = f'complex_trained_model.pkl' if train_complex else 'trained_model.pkl'
 
-    rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_graph_type)
+    rdata = get_train_eval_inclusion_data(dataset, dataset_pct, orig_graph_type, eval_data_type)
     orig_graph = rdata['orig']['graph']
     orig_triples = rdata['orig']['triples']
     eval_graph = rdata['eval']['graph']
@@ -196,6 +196,8 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
                         help='inductive graph to train on')
+    training_args.add_argument('--eval-data-type', type=str, required=False, default=EVAL_GRAPH,
+                        help='inductive graph to evaluate on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
     training_args.add_argument('--alpha', type=float, default=ALPHA,
@@ -215,6 +217,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, eval_data_type=args.eval_data_type, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance,
         train_complex=args.train_complex)

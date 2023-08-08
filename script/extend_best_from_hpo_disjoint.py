@@ -26,7 +26,7 @@ ALPHA = 1e-1
 
 def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, diffusion_device=DIFFUSION_DEVICE, 
         alpha=ALPHA, version=VERSION, diffusion_batch_size=None,
-        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
+        orig_graph_type=ORIG_GRAPH, eval_graph_type=EVAL_GRAPH, eval_data_type=EVAL_GRAPH, diffusion_iterations=DIFFUSION_ITERATIONS, 
         evaluation_batch_size=EVALUATION_BATCH_SIZE, eval_every=EVAL_EVERY, convergence_tol=CONVERGENCE_TOL):
 
     model, hpo_config_name = get_model_name_from_config(hpo_config_name)
@@ -39,7 +39,7 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
 
     dataset_factory = get_disjoint_dataset(dataset, version)
     inference_graph = dataset_factory.inductive_inference
-    eval_triples = get_eval_graph(dataset_factory, eval_graph_type)
+    eval_triples = get_eval_graph(dataset_factory, eval_data_type)
 
     # Define evaluator
     evaluator = RankBasedEvaluator()
@@ -151,6 +151,8 @@ if __name__ == '__main__':
                         help='inductive graph to train on')
     training_args.add_argument('--eval-graph', type=str, required=False, default=EVAL_GRAPH,
                         help='inductive graph to train on')
+    training_args.add_argument('--eval-data-type', type=str, required=False, default=EVAL_GRAPH,
+                        help='inductive graph to evaluate on')
     training_args.add_argument('--batch-size', type=int, default=EVALUATION_BATCH_SIZE,
                         help='evaluation batch size')
     training_args.add_argument('--alpha', type=float, default=ALPHA,
@@ -168,5 +170,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args.hpo_config_name, dataset=args.dataset, version=args.version, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, eval_data_type=args.eval_data_type, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=args.alpha, diffusion_iterations=args.diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance)

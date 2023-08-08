@@ -83,7 +83,7 @@ if __name__ == '__main__':
     
     print(f'{strblock} Extending Best {strblock}')
     extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+        orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, eval_data_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
         alpha=alpha, diffusion_iterations=diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance, 
         train_complex=False)
         
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     if args.train_complex:
         print(f'{strblock} Extending Best (complex) {strblock}')
         extend(args.hpo_config_name, dataset=args.dataset, dataset_pct=args.dataset_pct, evaluate_device=args.evaluation_device, diffusion_device=args.diffusion_device,
-            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
+            orig_graph_type=args.orig_graph, eval_graph_type=args.eval_graph, eval_data_type=args.eval_graph, evaluation_batch_size=args.batch_size, diffusion_batch_size=args.diffusion_batch_size,
             alpha=alpha, diffusion_iterations=diffusion_iterations, eval_every=args.eval_every, convergence_tol=args.convergence_tolerance, 
             train_complex=True)
 
