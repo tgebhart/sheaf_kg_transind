@@ -13,7 +13,8 @@
       "model": "transe",
       "model_kwargs": {
         "scoring_fct_norm": 2,
-        "relation_constrainer": "normalize"
+        "relation_constrainer": "normalize",
+        "entity_constrainer": "normalize"
       },
       "model_kwargs_ranges": {
         "embedding_dim": {
