@@ -142,12 +142,13 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
                 )
                 it_mr = orig_result.to_df()
                 diff_mr = (it_mr.merge(prev_it_mr, on=['Side','Type','Metric'], suffixes=('_diffused', '_iteration'))
-                            .merge(orig_mr, on=['Side','Type','Metric'])
-                            .merge(eval_mr, on=['Side','Type','Metric']))
+                            .merge(orig_mr, on=['Side','Type','Metric']))
 
                 diff_mr['iteration_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_iteration']
                 diff_mr['orig_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_original']
-                diff_mr['eval_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_eval']
+                if eval_data_type == eval_graph_type:
+                    diff_mr = diff_mr.merge(eval_mr, on=['Side','Type','Metric'])
+                    diff_mr['eval_difference'] = diff_mr['Value_diffused'] - diff_mr['Value_eval']
                 diff_mr['iteration'] = iteration
                 print(f'difference from orig model, iteration {iteration}:')
                 iteration_val = diff_mr[(diff_mr['Metric'] == 'hits_at_10') & (diff_mr['Side'] == 'both') & (diff_mr['Type'] == 'realistic')]
