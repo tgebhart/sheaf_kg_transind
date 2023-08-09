@@ -70,21 +70,21 @@ def run(hpo_config_name, dataset=DATASET, evaluate_device=EVALUATION_DEVICE, dif
     eval_model = torch.load(os.path.join(eval_savedir, 'trained_model.pkl')).to(evaluate_device)
     
     with torch.no_grad():
-
-        # evaluate model trained on evaluation data first, to get upper bound on expected performance
-        print('evaluating eval model...')
-        eval_result  = evaluator.evaluate(
-            batch_size=evaluation_batch_size,
-            model=eval_model,
-            device=evaluate_device,
-            mapped_triples=eval_triples.mapped_triples,
-            additional_filter_triples=[orig_triples.mapped_triples,
-                                        eval_graph.mapped_triples]
-        )
-        eval_mr = eval_result.to_df()
-        eval_mr.rename({'Value':'Value_eval'}, axis=1, inplace=True)
-        print(f'eval result:')
-        print(eval_mr[eval_mr['Metric'] == 'hits_at_10'])
+        if eval_data_type == eval_graph_type:
+            # evaluate model trained on evaluation data first, to get upper bound on expected performance
+            print('evaluating eval model...')
+            eval_result  = evaluator.evaluate(
+                batch_size=evaluation_batch_size,
+                model=eval_model,
+                device=evaluate_device,
+                mapped_triples=eval_triples.mapped_triples,
+                additional_filter_triples=[orig_triples.mapped_triples,
+                                            eval_graph.mapped_triples]
+            )
+            eval_mr = eval_result.to_df()
+            eval_mr.rename({'Value':'Value_eval'}, axis=1, inplace=True)
+            print(f'eval result:')
+            print(eval_mr[eval_mr['Metric'] == 'hits_at_10'])
 
         print('loading original model...')
         orig_model = torch.load(os.path.join(orig_savedir, savename_model)).to(evaluate_device)
