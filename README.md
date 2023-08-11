@@ -46,3 +46,7 @@ inductive knowledge graph completion (InductiveWN18RR):
 ```
 python script/full_run_from_inductive_hpo_disjoint.py --hpo-config-name rotate_hpo_extension_disjoint --eval-graph test --dataset InductiveWN18RR --version v2;
 ```
+
+## Figures
+
+The `notebooks` directory provides code for reproducing paper figures and tables. 
