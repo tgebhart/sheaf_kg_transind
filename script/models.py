@@ -50,7 +50,7 @@ class SE(ERModel):
         embedding_dim: int = 50,
         scoring_fct_norm: int = 1,
         entity_initializer: Hint[Initializer] = xavier_uniform_,
-        entity_constrainer: Hint[Constrainer] = functional.normalize,
+        entity_constrainer: Hint[Constrainer] = clamp_norm,
         entity_constrainer_kwargs: Optional[Mapping[str, Any]] = None,
         relation_initializer: Hint[Initializer] = xavier_uniform_norm_,
         relation_constrainer: Hint[Constrainer] = clamp_norm,
