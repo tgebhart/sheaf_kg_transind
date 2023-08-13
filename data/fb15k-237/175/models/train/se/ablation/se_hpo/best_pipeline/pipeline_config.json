@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "_stopper_comment": "While the original config had 500, early stopping will now switch it to 250",
+    "_stopper_comment": "While the original config had 500, early stopping will now switch it to 350",
     "_stopper_kwargs_removed_comment": "stopper_kwargs config removed after HPO: {'frequency': 50, 'patience': 2, 'relative_delta': 0.002}",
-    "best_trial_evaluation": 0.5219455101111906,
-    "best_trial_number": 5,
+    "best_trial_evaluation": 0.49730151505299436,
+    "best_trial_number": 16,
     "git_hash": "UNHASHED",
     "version": "1.10.1"
   },
@@ -18,8 +18,8 @@
     "filter_validation_when_testing": true,
     "loss": "nssa",
     "loss_kwargs": {
-      "adversarial_temperature": 1.2021090484440766,
-      "margin": 2.5058620641552904
+      "adversarial_temperature": 0.395609209348566,
+      "margin": 1.2997524449858657
     },
     "model": "se",
     "model_kwargs": {
@@ -28,11 +28,11 @@
     },
     "negative_sampler": "basic",
     "negative_sampler_kwargs": {
-      "num_negs_per_pos": 32
+      "num_negs_per_pos": 17
     },
     "optimizer": "adam",
     "optimizer_kwargs": {
-      "lr": 0.08905624133122862,
+      "lr": 0.09642455366057619,
       "weight_decay": 0.0
     },
     "testing": "<user defined>",
@@ -40,7 +40,7 @@
     "training_kwargs": {
       "batch_size": null,
       "label_smoothing": 0.0,
-      "num_epochs": 250
+      "num_epochs": 350
     },
     "training_loop": "slcwa",
     "validation": "<user defined>"
