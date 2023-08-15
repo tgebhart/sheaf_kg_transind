@@ -2,8 +2,8 @@
   "metadata": {
     "_stopper_comment": "While the original config had 500, early stopping will now switch it to 150",
     "_stopper_kwargs_removed_comment": "stopper_kwargs config removed after HPO: {'frequency': 50, 'patience': 2, 'relative_delta': 0.002}",
-    "best_trial_evaluation": 0.5446689541237768,
-    "best_trial_number": 88,
+    "best_trial_evaluation": 0.5455585207777354,
+    "best_trial_number": 55,
     "git_hash": "UNHASHED",
     "version": "1.10.1"
   },
@@ -20,12 +20,11 @@
     "model": "transe",
     "model_kwargs": {
       "embedding_dim": 256,
-      "relation_constrainer": "normalize",
       "scoring_fct_norm": 2
     },
     "optimizer": "adam",
     "optimizer_kwargs": {
-      "lr": 0.0010245710104804923,
+      "lr": 0.0010043219119202078,
       "weight_decay": 0.0
     },
     "regularizer": "no",

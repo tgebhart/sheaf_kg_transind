@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "_stopper_comment": "While the original config had 500, early stopping will now switch it to 150",
+    "_stopper_comment": "While the original config had 500, early stopping will now switch it to 300",
     "_stopper_kwargs_removed_comment": "stopper_kwargs config removed after HPO: {'frequency': 50, 'patience': 2, 'relative_delta': 0.002}",
-    "best_trial_evaluation": 0.7658227848101266,
-    "best_trial_number": 95,
+    "best_trial_evaluation": 0.7841772151898734,
+    "best_trial_number": 72,
     "git_hash": "UNHASHED",
     "version": "1.10.1"
   },
@@ -19,13 +19,12 @@
     "loss": "crossentropy",
     "model": "transe",
     "model_kwargs": {
-      "embedding_dim": 256,
-      "relation_constrainer": "normalize",
+      "embedding_dim": 64,
       "scoring_fct_norm": 2
     },
     "optimizer": "adam",
     "optimizer_kwargs": {
-      "lr": 0.008615381447634662,
+      "lr": 0.02134946511796265,
       "weight_decay": 0.0
     },
     "regularizer": "no",
@@ -34,7 +33,7 @@
     "training_kwargs": {
       "batch_size": 256,
       "label_smoothing": 0.7,
-      "num_epochs": 150
+      "num_epochs": 300
     },
     "training_loop": "lcwa",
     "validation": "<user defined>"
