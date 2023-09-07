@@ -1,0 +1,31 @@
+{
+    "metadata": {
+      "version": "1.10.0"
+    },
+    "pipeline": {
+      "evaluation_kwargs": {
+        "batch_size": null
+      },
+      "evaluator": "rankbased",
+      "evaluator_kwargs": {
+        "filtered": true
+      },
+      "loss": "crossentropy",
+      "model": "transe",
+      "model_kwargs": {
+        "embedding_dim": 64,
+        "scoring_fct_norm": 1
+      },
+      "optimizer": "adam",
+      "optimizer_kwargs": {
+        "lr": 0.0016608460884079603,
+        "weight_decay": 0.0
+      },
+      "training_kwargs": {
+        "batch_size": 256,
+        "label_smoothing": 0.717650072390557,
+        "num_epochs": 201
+      },
+      "training_loop": "lcwa"
+    }
+  }
